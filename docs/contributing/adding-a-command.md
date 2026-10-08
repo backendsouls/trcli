@@ -9,7 +9,7 @@ help, guide.
 
 ## 1. The scenario, failing
 
-In `tests/features/<spec>/…​.feature`, tagged with the acceptance scenario it automates:
+In `crates/trcli-cli/tests/features/<spec>/…​.feature`, tagged with the acceptance scenario it automates:
 
 ```gherkin
 @US2-07
@@ -22,7 +22,7 @@ Scenario: Records of any kind are found by tag
   And stdout contains "field-work  1"
 ```
 
-and the rejection, tagged `@invalid` — `tests/invalid_input_gate.rs` fails without one for
+and the rejection, tagged `@invalid` — `crates/trcli-cli/tests/invalid_input_gate.rs` fails without one for
 every option that takes a value:
 
 ```gherkin
@@ -71,7 +71,7 @@ pub async fn list_tags<U: TagStore>(unit: &U, kinds: &KindRegistry, kind: Option
   once and under the name the researcher typed (`--kind`).
 - The view model derives `Serialize`: that is the structured form. Lists are
   `{ items, total }`.
-- Its test is written first, in `tests/integration/trcli-application/<module>.rs`,
+- Its test is written first, in `crates/trcli-application/tests/use_cases/<module>.rs`,
   with the in-memory doubles of the `trcli-testing` crate and its `block_on`. A use case
   is tested through what it makes public, as its callers see it. (Pure logic that needs no
   double — a parser, a rule — is tested inline, beside the code.)
@@ -82,7 +82,7 @@ and records an audit entry for the change; the handler commits.
 ## 3. The command line
 
 In `crates/trcli-cli/src/args/<group>.rs`, with a description, help for every option, and
-an example — `tests/help_examples.rs` fails without them:
+an example — `crates/trcli-cli/tests/help_examples.rs` fails without them:
 
 ```rust
 /// The verbs of `trcli tag`.
@@ -149,7 +149,7 @@ impl Render for TagList {
 
 A view only says *what* to show. Colour, symbols, the terminal's width, and where remarks
 go (standard error) are `Human`'s business. Show everything the structured form holds:
-`tests/forms_agree.rs` compares the two.
+`crates/trcli-cli/tests/forms_agree.rs` compares the two.
 
 ## 6. The usage guide
 

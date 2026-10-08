@@ -21,32 +21,5 @@ trcli-testing.workspace = true
 tokio.workspace = true
 tempfile.workspace = true
 
-# This crate's integration tests — the adapter against each port's contract, how the
-# database is opened, and upgrades — are kept with every other non-unit test in the
-# repository's root tests/ directory.
-[[test]]
-name = "connection"
-path = "../../tests/integration/trcli-infra-sqlite/connection.rs"
-
-[[test]]
-name = "contract_audit"
-path = "../../tests/integration/trcli-infra-sqlite/contract_audit.rs"
-
-[[test]]
-name = "contract_records"
-path = "../../tests/integration/trcli-infra-sqlite/contract_records.rs"
-
-[[test]]
-name = "contract_uow"
-path = "../../tests/integration/trcli-infra-sqlite/contract_uow.rs"
-
-[[test]]
-name = "contract_workspace"
-path = "../../tests/integration/trcli-infra-sqlite/contract_workspace.rs"
-
-[[test]]
-name = "upgrade"
-path = "../../tests/integration/trcli-infra-sqlite/upgrade.rs"
-
 [lints]
 workspace = true

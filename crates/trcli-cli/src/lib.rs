@@ -11,7 +11,7 @@
 //! - [`extension`] is how a feature's kinds of record and commands are added.
 //! - [`run`] is the path of one command, from the arguments to the exit code.
 //!
-//! The library exists so that the black-box tests at the repository root can walk the
+//! The library exists so that the black-box tests in this crate's tests/ can walk the
 //! command tree, and so that a feature can be added from outside (see
 //! `examples/sample_kinds`); the `trcli` binary is a few lines around [`run::main`].
 

@@ -29,7 +29,7 @@ fn runs_here(tags: &[String]) -> bool {
 /// undefined.
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let features = concat!(env!("CARGO_MANIFEST_DIR"), "/../../tests/features");
+    let features = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/features");
     TrcliWorld::cucumber()
         // One scenario at a time: steps start processes and wait for them, and scenarios
         // about two commands at once must not have their timing disturbed by others.

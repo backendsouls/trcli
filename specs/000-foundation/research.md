@@ -42,7 +42,7 @@ confirmed in code in Phase 1 of the tasks.
 - **Rationale**: The constitution (principle I) and FR-070 require that the rules of the
   research depend on nothing about storage, display, or invocation, **and that this is
   checked automatically**. A crate that does not list SeaORM cannot import it. The check is
-  therefore the compiler, reinforced by `tests/layering.rs`, which reads `cargo metadata`
+  therefore the compiler, reinforced by `crates/trcli-cli/tests/layering.rs`, which reads `cargo metadata`
   and fails if a forbidden dependency is ever added to a manifest.
 - **Alternatives considered**:
   - *One crate with modules* — fewest files, but layering becomes a convention, and every
@@ -107,7 +107,7 @@ confirmed in code in Phase 1 of the tasks.
   a development dependency only.
 - **Decided during implementation**:
   - `trycmd` is **not** used. The examples in `docs/usage/*.md` are run by ~120 lines of
-    our own in `tests/usage.rs`, which lets one guide be one continuous session (a
+    our own in `crates/trcli-cli/tests/usage.rs`, which lets one guide be one continuous session (a
     workspace created by its first example is used by the next), fixes the clock and the
     identifiers, and can rewrite the expected output (`TRCLI_BLESS_USAGE=1`).
   - `anstream` is **not** used (see above).
@@ -124,7 +124,7 @@ confirmed in code in Phase 1 of the tasks.
   `default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio"]`, and
   `sea-orm-migration` with `["sqlx-sqlite", "runtime-tokio"]` (its default `cli` feature
   off). What the spike found, kept as a test in
-  `tests/integration/trcli-infra-sqlite/connection.rs`:
+  `crates/trcli-infra-sqlite/tests/connection.rs`:
   - Statements are passed by reference in 2.0 (`execute(&statement)`), or with the `_raw`
     methods by value.
   - Write-ahead journal, foreign keys, and the busy timeout are set through
@@ -337,7 +337,7 @@ confirmed in code in Phase 1 of the tasks.
   refuse with the workspace outcome; older → every command that would write says an upgrade
   is needed and exits; reading commands still work. `trcli workspace upgrade` copies
   `trcli.db` to `backups/`, applies migrations in one transaction, and on failure restores
-  the copy (FR-007). `tests/fixtures/formats/` keeps a small workspace of every released
+  the copy (FR-007). `crates/trcli-infra-sqlite/tests/fixtures/formats/` keeps a small workspace of every released
   format, added at each release; a test upgrades each and compares record counts and audit
   verification (FR-075). Before the first release there is no fixture, and the test covers
   only rollback on failure and refusal of a newer format.
@@ -353,12 +353,12 @@ confirmed in code in Phase 1 of the tasks.
 
   | Level | What | Where |
   |-------|------|-------|
-  | Unit | Value objects, rules, validation, rendering: inline beside the code. Use cases with fakes: `tests/integration/trcli-application` | in each crate |
-  | Contract | Each port against its fake and its real adapter, same suite | suites in `trcli-testing`; run in `tests/integration/trcli-infra-*` |
-  | Behaviour | Every acceptance scenario of the spec as Gherkin, against the built binary in a temporary directory | `tests/features/**`, `tests/bdd` |
-  | Documentation | Examples in `docs/usage/*.md`, run by our own runner | `tests/usage.rs` |
-  | Structure | Layering; every command has help with an example; every command group has a guide | `tests/layering.rs`, `tests/help_examples.rs` |
-  | Upgrade | Every earlier format upgrades without loss | `tests/fixtures/formats` |
+  | Unit | Value objects, rules, validation, rendering: inline beside the code. Use cases with fakes: `crates/trcli-application/tests/use_cases` | in each crate |
+  | Contract | Each port against its fake and its real adapter, same suite | suites in `trcli-testing`; run in `crates/trcli-infra-*/tests` |
+  | Behaviour | Every acceptance scenario of the spec as Gherkin, against the built binary in a temporary directory | `crates/trcli-cli/tests/features/**`, `crates/trcli-cli/tests/bdd` |
+  | Documentation | Examples in `docs/usage/*.md`, run by our own runner | `crates/trcli-cli/tests/usage.rs` |
+  | Structure | Layering; every command has help with an example; every command group has a guide | `crates/trcli-cli/tests/layering.rs`, `crates/trcli-cli/tests/help_examples.rs` |
+  | Upgrade | Every earlier format upgrades without loss | `crates/trcli-infra-sqlite/tests/fixtures/formats` |
 
   - **Generic steps**: "Given a workspace", "When I run `…`", "Then the exit code is N",
     "Then stdout contains / is JSON with …", "Then stderr mentions …", "Then nothing was
@@ -370,7 +370,7 @@ confirmed in code in Phase 1 of the tasks.
 - **Rationale**: The user asked for TDD and for BDD "by testing the CLI itself".
 - **Spike 2 — done on Linux; Windows and macOS are confirmed by the first CI run.**
   cucumber 0.23 runs as a harness-less test target of the CLI crate whose source is at the
-  repository root (`tests/bdd/main.rs`), on a current-thread tokio runtime. Measured on
+  repository root (`crates/trcli-cli/tests/bdd/main.rs`), on a current-thread tokio runtime. Measured on
   Linux: 110 scenarios (1,298 steps), each step starting the debug binary, in about 33
   seconds (a few scenarios hold the workspace for two or three seconds on purpose). Scenarios are run **one at a time** (`max_concurrent_scenarios(1)`): steps
   start processes and wait for them, and the scenarios about two commands at once must not

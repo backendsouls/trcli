@@ -4,7 +4,7 @@
 //! This example is the proof and the illustration of how a feature plugs in (FR-068):
 //! everything the two kinds can do beyond their own `add` and `edit` comes from
 //! registering a descriptor, and no file of the foundation names them
-//! (`tests/sample_kind_is_external.rs` checks). The acceptance scenarios about records
+//! (`crates/trcli-cli/tests/sample_kind_is_external.rs` checks). The acceptance scenarios about records
 //! run against this program; the `trcli` binary itself never contains it.
 //!
 //! ```sh

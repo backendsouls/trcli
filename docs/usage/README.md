@@ -1,7 +1,7 @@
 # TRCLI usage guides
 
 One guide per group of commands. Every example in these guides is run against the tool by
-`tests/usage.rs`, so what you read here is what the tool does.
+`crates/trcli-cli/tests/usage.rs`, so what you read here is what the tool does.
 
 | Guide | Commands |
 |-------|----------|

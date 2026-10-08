@@ -12,7 +12,7 @@ mod common;
 /// The sample feature, compiled into this test from the example it lives in, so that its
 /// commands can be walked like the foundation's.
 #[allow(dead_code)]
-#[path = "../crates/trcli-cli/examples/sample_kinds/sample/mod.rs"]
+#[path = "../examples/sample_kinds/sample/mod.rs"]
 mod sample;
 
 /// The whole command tree: the foundation's commands and the sample feature's, which

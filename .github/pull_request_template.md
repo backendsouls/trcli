@@ -13,13 +13,13 @@ most of them; the first is yours to show.
 - [ ] **Behaviour.** Every acceptance scenario of the specification is a Gherkin scenario,
       tagged with the scenario it automates, and passes against the binary.
 - [ ] **Invalid input.** Every argument and option of every new command appears in a
-      scenario tagged `@invalid` (`tests/invalid_input_gate.rs`).
+      scenario tagged `@invalid` (`crates/trcli-cli/tests/invalid_input_gate.rs`).
 - [ ] **Documentation.** Every new item, public and private, has a doc comment that says
       what it is for; each new module says what it contains and what it does not do.
 - [ ] **Usage guide.** `docs/usage/<noun>.md` exists for each new group of commands and its
-      examples pass (`tests/usage.rs`).
-- [ ] **Help.** Every new command has help text with an example (`tests/help_examples.rs`).
-- [ ] **Layers.** `tests/layering.rs` passes; no adapter is named outside `compose.rs`.
+      examples pass (`crates/trcli-cli/tests/usage.rs`).
+- [ ] **Help.** Every new command has help text with an example (`crates/trcli-cli/tests/help_examples.rs`).
+- [ ] **Layers.** `crates/trcli-cli/tests/layering.rs` passes; no adapter is named outside `compose.rs`.
 - [ ] **Contracts.** Every new port has a contract suite passed by its fake and its adapter.
 - [ ] **Three systems.** CI is green on Linux, macOS, and Windows.
 - [ ] **Upgrade.** If storage changed: a migration, and the upgrade tests pass.

@@ -5,7 +5,7 @@
 //! (Linux, with `unshare`), the commands are run there and must work. Everywhere, the
 //! commands are run with every proxy variable pointing nowhere, which would make any
 //! attempt to reach the network fail. That no crate able to reach the network is even
-//! linked is checked by `tests/layering.rs`.
+//! linked is checked by `crates/trcli-cli/tests/layering.rs`.
 
 mod common;
 

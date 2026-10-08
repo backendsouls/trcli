@@ -6,7 +6,7 @@
 //! hashing rule.
 //!
 //! It deliberately does **not** perform I/O, use `async`, or depend on any framework
-//! (FR-070). `tests/layering.rs` fails the build if a dependency that could do so is added.
+//! (FR-070). `crates/trcli-cli/tests/layering.rs` fails the build if a dependency that could do so is added.
 
 pub mod governance;
 pub mod settings;

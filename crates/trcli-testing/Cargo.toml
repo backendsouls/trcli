@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 # A development dependency of the other crates, never a dependency: nothing here is
-# compiled into the trcli binary. tests/layering.rs checks that.
+# compiled into the trcli binary. crates/trcli-cli/tests/layering.rs checks that.
 [dependencies]
 trcli-domain.workspace = true
 trcli-application.workspace = true

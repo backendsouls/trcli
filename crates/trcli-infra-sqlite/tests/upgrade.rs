@@ -2,7 +2,7 @@
 //!
 //! - A failing change of format leaves the database exactly as the copy taken before it.
 //! - A workspace of a newer format is refused.
-//! - Every fixture under `tests/fixtures/formats/` — one workspace per released format —
+//! - Every fixture under `crates/trcli-infra-sqlite/tests/fixtures/formats/` — one workspace per released format —
 //!   upgrades without loss. Before the first release there is none, and that loop passes
 //!   without doing anything.
 
@@ -155,9 +155,9 @@ impl trcli_application::ports::workspace::BackupCopy for NoCopy {
     }
 }
 
-/// The directories under `tests/fixtures/formats/`, one per released format.
+/// The directories under `crates/trcli-infra-sqlite/tests/fixtures/formats/`, one per released format.
 fn fixtures() -> Vec<PathBuf> {
-    let formats = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/formats");
+    let formats = Path::new(env!("CARGO_MANIFEST_DIR")).join("crates/trcli-infra-sqlite/tests/fixtures/formats");
     let Ok(entries) = std::fs::read_dir(formats) else {
         return Vec::new();
     };

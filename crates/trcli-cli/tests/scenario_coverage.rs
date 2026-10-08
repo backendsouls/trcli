@@ -3,7 +3,7 @@
 //!
 //! The specification's user stories are read from `specs/000-foundation/spec.md`. For
 //! each numbered acceptance scenario there must be either a Gherkin scenario tagged with
-//! it (`@US3-07` is user story 3, scenario 7) under `tests/features/foundation/`, or an
+//! it (`@US3-07` is user story 3, scenario 7) under `crates/trcli-cli/tests/features/foundation/`, or an
 //! entry in the table below naming the structural test that covers it.
 
 mod common;
@@ -13,12 +13,12 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Acceptance scenarios that are not shown through the binary: each is covered by the
 /// test file named, which must exist.
 const STRUCTURAL: [(&str, &str); 6] = [
-    ("US8-03", "tests/scenario_coverage.rs"),
-    ("US8-04", "tests/invalid_input_gate.rs"),
-    ("US8-05", "tests/help_examples.rs"),
+    ("US8-03", "crates/trcli-cli/tests/scenario_coverage.rs"),
+    ("US8-04", "crates/trcli-cli/tests/invalid_input_gate.rs"),
+    ("US8-05", "crates/trcli-cli/tests/help_examples.rs"),
     ("US8-06", ".github/workflows/ci.yml"),
-    ("US8-07", "tests/layering.rs"),
-    ("US8-09", "tests/integration/trcli-infra-sqlite/upgrade.rs"),
+    ("US8-07", "crates/trcli-cli/tests/layering.rs"),
+    ("US8-09", "crates/trcli-infra-sqlite/tests/upgrade.rs"),
 ];
 
 /// How many acceptance scenarios each user story of the specification has.

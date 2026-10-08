@@ -1,4 +1,4 @@
-//! Shared by the black-box tests at the repository root: a scratch directory and the
+//! Shared by the black-box tests in this crate's tests/: a scratch directory and the
 //! `trcli` binary set up so that nothing outside the directory is read or written.
 
 #![allow(dead_code)] // each test file uses a part of this module
@@ -202,7 +202,7 @@ pub fn files_under(directory: &Path, extensions: &[&str]) -> Vec<PathBuf> {
 
 /// The feature files of every specification.
 pub fn feature_files() -> Vec<PathBuf> {
-    files_under(&repository().join("tests/features"), &["feature"])
+    files_under(&repository().join("crates/trcli-cli/tests/features"), &["feature"])
 }
 
 /// A scenario of a feature file: its tags and the command lines it runs.
