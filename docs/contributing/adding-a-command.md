@@ -71,7 +71,7 @@ pub async fn list_tags<U: TagStore>(unit: &U, kinds: &KindRegistry, kind: Option
   once and under the name the researcher typed (`--kind`).
 - The view model derives `Serialize`: that is the structured form. Lists are
   `{ items, total }`.
-- Its test is written first, in `crates/trcli-application/tests/use_cases/<module>.rs`,
+- Its test is written first, in `tests/integration/trcli-application/<module>.rs`,
   with the in-memory doubles of the `trcli-testing` crate and its `block_on`. A use case
   is tested through what it makes public, as its callers see it. (Pure logic that needs no
   double — a parser, a rule — is tested inline, beside the code.)

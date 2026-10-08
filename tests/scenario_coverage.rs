@@ -18,7 +18,7 @@ const STRUCTURAL: [(&str, &str); 6] = [
     ("US8-05", "tests/help_examples.rs"),
     ("US8-06", ".github/workflows/ci.yml"),
     ("US8-07", "tests/layering.rs"),
-    ("US8-09", "crates/trcli-infra-sqlite/tests/upgrade.rs"),
+    ("US8-09", "tests/integration/trcli-infra-sqlite/upgrade.rs"),
 ];
 
 /// How many acceptance scenarios each user story of the specification has.

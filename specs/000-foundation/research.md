@@ -124,7 +124,7 @@ confirmed in code in Phase 1 of the tasks.
   `default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio"]`, and
   `sea-orm-migration` with `["sqlx-sqlite", "runtime-tokio"]` (its default `cli` feature
   off). What the spike found, kept as a test in
-  `crates/trcli-infra-sqlite/tests/connection.rs`:
+  `tests/integration/trcli-infra-sqlite/connection.rs`:
   - Statements are passed by reference in 2.0 (`execute(&statement)`), or with the `_raw`
     methods by value.
   - Write-ahead journal, foreign keys, and the busy timeout are set through
@@ -353,8 +353,8 @@ confirmed in code in Phase 1 of the tasks.
 
   | Level | What | Where |
   |-------|------|-------|
-  | Unit | Value objects, rules, validation, rendering: inline beside the code. Use cases with fakes: `trcli-application/tests/use_cases` | in each crate |
-  | Contract | Each port against its fake and its real adapter, same suite | suites in `trcli-testing`; run in `trcli-infra-*/tests` |
+  | Unit | Value objects, rules, validation, rendering: inline beside the code. Use cases with fakes: `tests/integration/trcli-application` | in each crate |
+  | Contract | Each port against its fake and its real adapter, same suite | suites in `trcli-testing`; run in `tests/integration/trcli-infra-*` |
   | Behaviour | Every acceptance scenario of the spec as Gherkin, against the built binary in a temporary directory | `tests/features/**`, `tests/bdd` |
   | Documentation | Examples in `docs/usage/*.md`, run by our own runner | `tests/usage.rs` |
   | Structure | Layering; every command has help with an example; every command group has a guide | `tests/layering.rs`, `tests/help_examples.rs` |

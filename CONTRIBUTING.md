@@ -121,12 +121,16 @@ trcli-cli  ─▶  trcli-infra-sqlite  ─▶  trcli-application  ─▶  trcli-
 
 ### Where tests go
 
-| Kind of test | Where | Why there |
+Crates hold **only unit tests**, inline beside the code. Every other test lives in the
+repository's root `tests/` directory, in a sub-directory for its kind. A crate still owns
+its integration tests: its `Cargo.toml` has a `[[test]]` entry whose `path` points there.
+
+| Kind of test | Where | What it is |
 |--------------|-------|-----------|
-| Pure logic: a value object, a rule, a parser | Inline, in a `#[cfg(test)] mod tests` beside the code | Rust's convention; it can see private items |
-| A use case, which needs doubles of its ports | `crates/trcli-application/tests/use_cases/<module>.rs` | It uses only the public interface, and the doubles live outside the crate |
-| An adapter against its port's contract | `crates/trcli-infra-*/tests/` | The same suite the double passes |
-| Behaviour through the built tool | `tests/features/` (Gherkin), `tests/*.rs` | They run the binary as a researcher would |
+| Unit | Inline, in a `#[cfg(test)] mod tests` beside the code | Pure logic: a value object, a rule, a parser. It can see private items |
+| Integration | `tests/integration/<crate>/` | A crate through its public interface: the use cases against the doubles (`trcli-application`), the adapter against each port's contract (`trcli-infra-sqlite`) |
+| Behaviour | `tests/features/` (Gherkin), `tests/bdd/` (the harness) | The acceptance scenarios, run against the built tool |
+| Functional and structural | `tests/*.rs` | The built tool as a researcher runs it, and the gates on the code's structure |
 
 Doubles are **fakes**, not mocks: small working implementations held to the same contract
 suites as the real adapters. A test then says what must be true afterwards, not which
@@ -187,7 +191,7 @@ second caller — not "for flexibility".
 2. **If this release changes how a workspace is stored:** before raising
    `FormatVersion::CURRENT`, add a fixture workspace of the outgoing format under
    `tests/fixtures/formats/<number>/` (see the README there); then raise the number, and
-   check that `crates/trcli-infra-sqlite/tests/upgrade.rs` upgrades the fixture.
+   check that `tests/integration/trcli-infra-sqlite/upgrade.rs` upgrades the fixture.
 3. Update the version in the workspace `Cargo.toml`.
 4. Tag `v<version>`; the release workflow builds a binary for each system and drafts the
    release.

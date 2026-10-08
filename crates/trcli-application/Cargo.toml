@@ -16,10 +16,11 @@ time.workspace = true
 [dev-dependencies]
 trcli-testing.workspace = true
 
-# The use cases' tests, which need the doubles, are one integration test.
+# This crate's integration tests — the use cases against the doubles — are kept with
+# every other non-unit test in the repository's root tests/ directory.
 [[test]]
 name = "use_cases"
-path = "tests/use_cases/main.rs"
+path = "../../tests/integration/trcli-application/main.rs"
 
 [lints]
 workspace = true

@@ -13,8 +13,9 @@
 //! output. Ports use `async fn` only where they reach storage.
 //!
 //! In-memory doubles of every port, and the contract suites every adapter must pass, are
-//! in the `trcli-testing` crate; the tests of the use cases, which need them, are in this
-//! crate's `tests/` directory.
+//! in the `trcli-testing` crate; the tests of the use cases, which need them, are in the
+//! repository's `tests/integration/trcli-application/` directory. Only unit tests of pure
+//! logic are in this crate, beside the code.
 
 // Ports are implemented and called on one thread (the runtime is single-threaded), so the
 // futures of their `async fn`s need no `Send` bound, which is what this lint warns about.

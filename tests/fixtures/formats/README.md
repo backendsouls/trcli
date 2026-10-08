@@ -12,7 +12,7 @@ tests/fixtures/formats/
         └── config.toml
 ```
 
-`crates/trcli-infra-sqlite/tests/upgrade.rs` upgrades a copy of every directory here and
+`tests/integration/trcli-infra-sqlite/upgrade.rs` upgrades a copy of every directory here and
 checks that no record is lost and that the audit trail still verifies (FR-075).
 
 ## When a fixture is added

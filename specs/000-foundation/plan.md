@@ -138,19 +138,17 @@ crates/
 │       ├── governance/         # record an entry, query, verify, export; telemetry
 │       ├── outcome.rs          # Outcome and Problem: the fixed set of ways a command ends
 │       ├── validation.rs       # helpers and the pattern every command constructor follows
-│       └── (tests/use_cases/)  # the use cases' tests, against the doubles below
+│                               # (unit tests only; its integration tests are in tests/integration/)
 │
 ├── trcli-testing/              # development only: in-memory doubles of every port and the
 │                               # contract suites every adapter must pass
 │
 ├── trcli-infra-sqlite/         # SeaORM entities, migrations, port implementations
-│   ├── src/{connection.rs, unit_of_work.rs, entities/, migrations/, stores/}
-│   └── tests/                  # contract tests: the same suite as the fakes
+│   └── src/{connection.rs, unit_of_work.rs, entities/, migrations/, stores/}
 │
 ├── trcli-infra-system/         # everything that differs between operating systems
 │   ├── src/{paths.rs, locator.rs, settings_files.rs, clock.rs, ids.rs, actor.rs,
 │   │        audit_head.rs, backup_copy.rs}
-│   └── tests/
 │
 └── trcli-cli/                  # the `trcli` binary: composition root and presentation
     └── src/
@@ -165,7 +163,10 @@ crates/
         └── progress.rs
     (examples/sample_kinds/)    # the tool with two sample record kinds added from outside
 
-tests/                          # black-box tests of the binary
+tests/                          # every test that is not a unit test
+├── integration/                # one directory per crate under test
+│   ├── trcli-application/      #   the use cases against the doubles
+│   └── trcli-infra-sqlite/     #   the adapter against each port's contract; upgrades
 ├── features/foundation/        # Gherkin, one file per user story (8)
 ├── bdd/                        # cucumber world and generic steps, reused by every feature
 ├── usage.rs                    # runs every example of docs/usage/*.md
