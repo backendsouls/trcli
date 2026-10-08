@@ -45,3 +45,17 @@ impl Databases {
             .expect("a new database")
     }
 }
+
+/// A plain connection to a database file, as something other than the adapter would
+/// open it. The file is given as a path, so that no character of it needs escaping on
+/// any system.
+pub async fn plain_connection(path: &std::path::Path) -> sea_orm::DatabaseConnection {
+    let file = path.to_path_buf();
+    let mut options = sea_orm::ConnectOptions::new("sqlite:trcli-test");
+    options
+        .sqlx_logging(false)
+        .map_sqlx_sqlite_opts(move |sqlite| sqlite.filename(&file));
+    sea_orm::Database::connect(options)
+        .await
+        .expect("a plain connection")
+}

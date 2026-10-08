@@ -8,7 +8,7 @@ mod support;
 
 use std::time::{Duration, Instant};
 
-use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
+use sea_orm::{ConnectionTrait, DbBackend, Statement};
 use trcli_application::ports::records::TagStore;
 use trcli_application::ports::unit_of_work::{Storage, StoreError, UnitOfWork};
 use trcli_application::ports::workspace::{StorageOpener, WorkspaceStore};
@@ -34,8 +34,7 @@ async fn the_journal_is_write_ahead() {
     let databases = support::Databases::new();
     let storage = databases.fresh().await;
     // Asked through a separate, plain connection: the mode is a property of the file.
-    let url = format!("sqlite://{}?mode=ro", storage.path().display());
-    let plain = Database::connect(url).await.expect("connect");
+    let plain = support::plain_connection(storage.path()).await;
     let row = plain
         .query_one_raw(Statement::from_string(
             DbBackend::Sqlite,

@@ -10,7 +10,7 @@ mod support;
 
 use std::path::{Path, PathBuf};
 
-use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbErr, TransactionTrait};
+use sea_orm::{ConnectionTrait, DbErr, TransactionTrait};
 use sea_orm_migration::async_trait::async_trait;
 use sea_orm_migration::{MigrationName, MigrationTrait, MigratorTrait, SchemaManager};
 use trcli_application::governance::verify::{TrailVerdict, verify};
@@ -84,9 +84,7 @@ async fn a_failing_migration_leaves_the_database_identical_to_the_copy_taken_bef
     storage.close().await.expect("close");
     let copy = std::fs::read(&path).expect("the copy taken before");
 
-    let connection = Database::connect(ConnectOptions::new(format!("sqlite://{}", path.display())))
-        .await
-        .expect("open");
+    let connection = support::plain_connection(&path).await;
     let transaction = connection.begin().await.expect("begin");
     let failed = FailingMigrator::up(&transaction, None).await;
     assert!(failed.is_err(), "the migration must fail");

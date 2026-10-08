@@ -211,7 +211,12 @@ mod tests {
         let problem =
             InitCommand::new(input(Some("Again")), &FakeFiles::new(), &probe).expect_err("exists");
         assert_eq!(problem.code, codes::WORKSPACE_EXISTS);
-        assert!(problem.message.contains("/research/.trcli"));
+        // Joined, not written out: the separator is the system's.
+        let place = PathBuf::from("/research")
+            .join(".trcli")
+            .display()
+            .to_string();
+        assert!(problem.message.contains(&place), "{}", problem.message);
     }
 
     #[test]
@@ -234,8 +239,8 @@ mod tests {
         let database = Path::new("/research/.trcli/trcli.db");
         let created = block_on(init(&services, &stamp(), database, command)).expect("created");
         assert_eq!(
-            (created.name.as_str(), created.location.as_str()),
-            ("Doctorate", "/research/.trcli")
+            (created.name.as_str(), PathBuf::from(&created.location)),
+            ("Doctorate", PathBuf::from("/research").join(".trcli"))
         );
 
         let state = opener.storage(database).expect("storage").snapshot();

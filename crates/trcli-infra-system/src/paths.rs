@@ -49,9 +49,10 @@ pub fn user_settings_file(
             .map(PathBuf::from)
     };
     let directory = match platform {
-        // A relative XDG_CONFIG_HOME is invalid by the convention and is ignored.
+        // A relative XDG_CONFIG_HOME is invalid by the convention and is ignored. On
+        // Linux "has a root" is "is absolute".
         Platform::Linux => set("XDG_CONFIG_HOME")
-            .filter(|path| path.is_absolute())
+            .filter(|path| path.has_root())
             .or_else(|| set("HOME").map(|home| home.join(".config"))),
         Platform::MacOs => set("HOME").map(|home| home.join("Library").join("Application Support")),
         Platform::Windows => set("APPDATA"),

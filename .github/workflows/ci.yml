@@ -52,12 +52,12 @@ jobs:
       # tests, and the structural gates that need no feature: layering, help examples,
       # scenario coverage, the sample kinds staying external, atomic writes.
       - name: Tests (default build)
-        run: cargo test --workspace
+        run: cargo test --workspace --no-fail-fast
 
       # The acceptance scenarios against the built binary, the usage guides' examples,
       # the invalid-input gate, both output forms agreeing, and text in any script.
       - name: Behaviour scenarios and gates (with the sample kinds and the test clock)
-        run: cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind
+        run: cargo test --workspace --no-fail-fast --features trcli-cli/test-clock,trcli-cli/sample-kind
 
       # A release build must not carry the sample kinds.
       - name: A default build has no sample commands
