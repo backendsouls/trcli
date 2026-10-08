@@ -139,11 +139,7 @@ impl FakeUnit {
 
     /// Refuses to point at a record the index does not hold, as a foreign key would.
     fn require_record(&self, id: RecordId) -> Result<(), StoreError> {
-        let exists = self
-            .working
-            .records
-            .iter()
-            .any(|record| record.id == id && record.deleted_at.is_none());
+        let exists = self.working.records.iter().any(|record| record.id == id);
         if exists {
             Ok(())
         } else {

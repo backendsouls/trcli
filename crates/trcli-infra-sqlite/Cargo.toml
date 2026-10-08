@@ -17,8 +17,8 @@ trcli-application.workspace = true
 sea-orm.workspace = true
 sea-orm-migration.workspace = true
 sha2.workspace = true
+serde_json.workspace = true
 time.workspace = true
-uuid.workspace = true
 
 [dev-dependencies]
 trcli-application = { workspace = true, features = ["test-support", "sample-kind"] }

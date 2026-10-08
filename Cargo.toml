@@ -27,19 +27,10 @@ trcli-infra-system = { path = "crates/trcli-infra-system" }
 
 clap = { version = "4.6", features = ["derive", "env", "wrap_help"] }
 clap_complete = "4.6"
-sea-orm = { version = "2.0", default-features = false, features = [
-    "macros",
-    "sqlx-sqlite",
-    "runtime-tokio",
-    "with-time",
-    "with-uuid",
-] }
-sea-orm-migration = { version = "2.0", default-features = false, features = [
-    "sqlx-sqlite",
-    "runtime-tokio",
-    "with-time",
-    "with-uuid",
-] }
+# Identifiers are stored as text and instants as whole milliseconds, so SeaORM's own
+# time and uuid support is not needed (research.md, section 3, spike 1).
+sea-orm = { version = "2.0", default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio"] }
+sea-orm-migration = { version = "2.0", default-features = false, features = ["sqlx-sqlite", "runtime-tokio"] }
 tokio = { version = "1.53", default-features = false, features = ["rt", "macros", "signal"] }
 time = { version = "0.3", features = ["formatting", "parsing", "macros"] }
 uuid = { version = "1.27", features = ["v7"] }
