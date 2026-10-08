@@ -34,6 +34,9 @@ pub fn version() -> String {
 /// The command tree of this build.
 pub fn command() -> Command {
     let root = Command::new("trcli")
+        // The name shown in usage lines is the tool's, not the file's: on Windows the
+        // file is `trcli.exe`, and help must read the same on every system.
+        .bin_name("trcli")
         .about(ABOUT)
         .version(version())
         .after_help(AFTER_HELP)
@@ -159,6 +162,15 @@ mod tests {
     #[test]
     fn the_command_tree_is_well_formed() {
         command().debug_assert();
+    }
+
+    #[test]
+    fn usage_names_the_tool_whatever_the_file_is_called() {
+        let error = command()
+            .try_get_matches_from(["C:\\tools\\trcli.exe", "workspace", "explode"])
+            .expect_err("unknown verb");
+        let text = error.render().to_string();
+        assert!(text.contains("Usage: trcli workspace"), "{text}");
     }
 
     #[test]
