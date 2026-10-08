@@ -103,6 +103,10 @@ impl Storage for FakeStorage {
     async fn read(&self) -> Result<FakeUnit, StoreError> {
         self.unit()
     }
+
+    async fn close(self) -> Result<(), StoreError> {
+        Ok(())
+    }
 }
 
 /// A unit of work on the in-memory storage.

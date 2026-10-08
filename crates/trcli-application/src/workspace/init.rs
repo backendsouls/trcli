@@ -159,7 +159,9 @@ where
         .named(workspace.name.as_str())
         .with_changes(changes);
     unit.record(stamp, draft).await?;
-    commit(unit, services.head).await
+    commit(unit, services.head).await?;
+    // A new workspace is left at rest: one database file, nothing beside it to carry along.
+    Ok(storage.close().await?)
 }
 
 #[cfg(test)]

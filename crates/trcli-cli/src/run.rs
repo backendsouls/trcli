@@ -110,6 +110,7 @@ async fn run(invocation: Invocation, zone: UtcOffset) -> Outcome {
         }
     };
     remember(&mut session, &invocation.path, started, outcome).await;
+    session.close().await;
     outcome
 }
 

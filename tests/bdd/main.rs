@@ -28,6 +28,9 @@ fn runs_here(tags: &[String]) -> bool {
 async fn main() {
     let features = concat!(env!("CARGO_MANIFEST_DIR"), "/../../tests/features");
     TrcliWorld::cucumber()
+        // One scenario at a time: steps start processes and wait for them, and scenarios
+        // about two commands at once must not have their timing disturbed by others.
+        .max_concurrent_scenarios(1)
         .fail_on_skipped()
         .filter_run_and_exit(features, |feature, _rule, scenario| {
             let tags: Vec<String> = feature.tags.iter().chain(&scenario.tags).cloned().collect();

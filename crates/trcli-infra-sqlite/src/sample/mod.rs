@@ -8,7 +8,7 @@
 mod sample_note;
 mod specimen;
 
-use sea_orm::DbErr;
+use sea_orm::{DatabaseConnection, DbBackend, DbErr, Statement};
 use sea_orm_migration::async_trait::async_trait;
 use sea_orm_migration::sea_orm::ConnectionTrait;
 use sea_orm_migration::sea_query::{Alias, DynIden, IntoIden};
@@ -63,9 +63,19 @@ impl MigratorTrait for SampleMigrator {
     }
 }
 
-/// Creates the sample kinds' tables in a database that does not have them yet.
-pub async fn ensure_tables<'c>(
-    connection: impl IntoSchemaManagerConnection<'c>,
-) -> Result<(), DbErr> {
+/// Creates the sample kinds' tables in a database that does not have them yet. A database
+/// that has them is only read, so that opening a workspace changes nothing in it.
+pub async fn ensure_tables(connection: &DatabaseConnection) -> Result<(), DbErr> {
+    let exists = Statement::from_string(
+        DbBackend::Sqlite,
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('specimen', 'sample_note')",
+    );
+    let found: i64 = match connection.query_one_raw(exists).await? {
+        Some(row) => row.try_get_by_index(0)?,
+        None => 0,
+    };
+    if found == 2 {
+        return Ok(());
+    }
     SampleMigrator::up(connection, None).await
 }

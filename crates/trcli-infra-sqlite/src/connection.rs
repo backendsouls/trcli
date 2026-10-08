@@ -201,11 +201,6 @@ impl SqliteStorage {
         self.connection.execute_unprepared("PRAGMA wal_checkpoint(TRUNCATE)").await.map(|_| ()).map_err(store_error)
     }
 
-    /// Closes the connections, which also folds the write-ahead journal back into the
-    /// database file. Used before the file is copied.
-    pub async fn close(self) -> Result<(), StoreError> {
-        self.connection.close().await.map_err(store_error)
-    }
 }
 
 impl Storage for SqliteStorage {
@@ -229,5 +224,11 @@ impl Storage for SqliteStorage {
     async fn read(&self) -> Result<SqliteUnit, StoreError> {
         let transaction = self.connection.begin().await.map_err(store_error)?;
         Ok(SqliteUnit::new(transaction))
+    }
+
+    async fn close(self) -> Result<(), StoreError> {
+        // Closing the last connection folds the write-ahead journal back into the
+        // database file and removes it: between commands a workspace is that one file.
+        self.connection.close().await.map_err(store_error)
     }
 }

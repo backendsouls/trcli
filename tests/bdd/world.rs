@@ -150,6 +150,37 @@ impl TrcliWorld {
         Database::connect(format!("sqlite://{}?mode={mode}", database.display())).await.ok()
     }
 
+    /// Whether another process holds the workspace for writing right now.
+    async fn is_held(&self) -> bool {
+        let Some(database) = self.database() else { return false };
+        let mut options = sea_orm::ConnectOptions::new(format!("sqlite://{}?mode=rw", database.display()));
+        // Asked without waiting, on one connection, so that the answer is about this moment.
+        options.max_connections(1).map_sqlx_sqlite_opts(|sqlite| sqlite.busy_timeout(std::time::Duration::ZERO));
+        let Ok(connection) = Database::connect(options).await else { return false };
+        let held = connection.execute_unprepared("BEGIN IMMEDIATE").await.is_err();
+        if !held {
+            let _ = connection.execute_unprepared("ROLLBACK").await;
+        }
+        let _ = connection.close().await;
+        held
+    }
+
+    /// Waits until another process holds the workspace for writing. Scenarios about two
+    /// commands at once, or about stopping a command, start from this known point
+    /// instead of from a guess at how long a process takes to start.
+    ///
+    /// A command also writes for an instant while it starts, so the workspace must be
+    /// seen held several times in a row before it counts as held.
+    pub async fn wait_until_held(&self) {
+        let started = std::time::Instant::now();
+        let mut seen = 0;
+        while seen < 4 {
+            assert!(started.elapsed() < std::time::Duration::from_secs(20), "no command took the workspace");
+            seen = if self.is_held().await { seen + 1 } else { 0 };
+            std::thread::sleep(std::time::Duration::from_millis(75));
+        }
+    }
+
     /// Runs one statement directly against the workspace's database.
     pub async fn execute(&self, sql: &str) {
         let connection = self.connect(true).await.expect("a workspace database");
@@ -196,7 +227,9 @@ impl TrcliWorld {
         // What a feature file cannot hold comfortably: a control character, and very long text.
         expanded = expanded.replace("{bell}", "\u{7}").replace("{long title}", &"t".repeat(501));
         for (name, handle) in &self.handles {
-            expanded = expanded.replace(&format!("<{name}>"), handle);
+            // `{name}` is the spelling for scenario outlines, where `<…>` already means a
+            // column of the examples table.
+            expanded = expanded.replace(&format!("<{name}>"), handle).replace(&format!("{{{name}}}"), handle);
             for length in 1..=handle.len() {
                 expanded = expanded.replace(&format!("<{name}:{length}>"), &handle[..length]);
             }

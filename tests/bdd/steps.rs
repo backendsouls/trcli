@@ -127,13 +127,13 @@ fn first_handle(text: &str) -> Option<String> {
     })
 }
 
-#[when(expr = "I run {string} and stop it with {word} after {int} ms")]
-async fn i_run_and_stop_it(world: &mut TrcliWorld, line: String, signal: String, after: u64) {
+#[when(expr = "I run {string} and stop it with {word} once it holds the workspace")]
+async fn i_run_and_stop_it(world: &mut TrcliWorld, line: String, signal: String) {
     let arguments = arguments(world, &line);
     world.before = world.snapshot().await;
     let mut command = world.trcli(&arguments);
     let child = command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).spawn().expect("trcli starts");
-    std::thread::sleep(Duration::from_millis(after));
+    world.wait_until_held().await;
     let started = Instant::now();
     let sent = std::process::Command::new("kill").arg(format!("-{signal}")).arg(child.id().to_string()).status();
     assert!(sent.is_ok_and(|status| status.success()), "the signal could not be sent");
@@ -142,15 +142,15 @@ async fn i_run_and_stop_it(world: &mut TrcliWorld, line: String, signal: String,
     assert!(started.elapsed() < Duration::from_secs(1), "the command took {:?} to stop", started.elapsed());
 }
 
-#[when(expr = "I run {string} while {string} is still running")]
-async fn i_run_while_another_is_running(world: &mut TrcliWorld, line: String, other: String) {
+#[when(expr = "I run {string} while {string} holds the workspace")]
+async fn i_run_while_another_holds_the_workspace(world: &mut TrcliWorld, line: String, other: String) {
     let holding = arguments(world, &other);
     let mut holder = world.trcli(&holding).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()).spawn().expect("trcli starts");
-    // Long enough for the first command to have taken the workspace.
-    std::thread::sleep(Duration::from_millis(400));
+    world.wait_until_held().await;
     let arguments = arguments(world, &line);
     world.run(&arguments).await;
-    holder.wait().expect("the first command ends");
+    let ended = holder.wait().expect("the first command ends");
+    assert!(ended.success(), "the command that held the workspace failed");
 }
 
 #[when(expr = "audit entry {int} is altered outside the tool")]

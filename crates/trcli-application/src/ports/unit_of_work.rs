@@ -65,6 +65,10 @@ pub trait Storage {
 
     /// Begins a unit of work that only reads; committing it changes nothing.
     async fn read(&self) -> Result<Self::Unit, StoreError>;
+
+    /// Lets go of the storage when a command is done with it, leaving it in the form it
+    /// has at rest: whole, in its own place, ready to be copied.
+    async fn close(self) -> Result<(), StoreError>;
 }
 
 /// A set of changes that happen together or not at all.

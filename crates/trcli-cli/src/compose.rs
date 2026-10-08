@@ -342,6 +342,17 @@ impl Session {
         Ok(storage)
     }
 
+    /// Closes the workspace's storage at the end of the command. Closing folds the
+    /// write-ahead journal back into the database file, so that between commands the
+    /// workspace is that one file and can be copied as such.
+    pub async fn close(&mut self) {
+        if let Some(storage) = self.storage.take()
+            && let Err(error) = storage.close().await
+        {
+            self.diagnostics.line(|| format!("the workspace's storage did not close cleanly: {error}"));
+        }
+    }
+
     /// How many rows a list shows unless `--limit` says otherwise.
     pub fn page_size(&self) -> u32 {
         self.settings.integer(OUTPUT_PAGE_SIZE).and_then(|size| u32::try_from(size).ok()).unwrap_or(50)
