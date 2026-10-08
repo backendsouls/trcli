@@ -301,8 +301,9 @@ impl TrcliWorld {
 }
 
 /// The example program that is `trcli` with the sample kinds of record added. Cargo
-/// builds it beside the binary when the whole test suite is run; a single suite is run
-/// with `--example sample_kinds` added to build it too.
+/// builds it beside the binary when every test is run; before a single suite is run
+/// alone, it is built with `cargo build -p trcli-cli --example sample_kinds` and the
+/// same features and profile as the suite.
 pub fn sample_program() -> PathBuf {
     let binary = Path::new(env!("CARGO_BIN_EXE_trcli"));
     let name = format!("sample_kinds{}", std::env::consts::EXE_SUFFIX);
@@ -313,7 +314,7 @@ pub fn sample_program() -> PathBuf {
         .join(name);
     assert!(
         program.is_file(),
-        "{} is not built: run the suite with `--example sample_kinds`, or run every test",
+        "{} is not built: run every test, or first `cargo build -p trcli-cli --example sample_kinds` with the same features and profile",
         program.display()
     );
     program

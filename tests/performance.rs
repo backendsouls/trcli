@@ -4,7 +4,8 @@
 //! - Listing or searching 10,000 records of one kind answers in under two seconds.
 //!
 //! These are timings, so they are ignored by default and run on purpose, on an optimized
-//! build: `cargo test --release --test performance --example sample_kinds --features test-clock --
+//! build, after `cargo build --release -p trcli-cli --example sample_kinds --features
+//! test-clock`: `cargo test --release -p trcli-cli --test performance --features test-clock --
 //! --ignored`. Each figure is the best of several runs, so that one slow start of a
 //! process on a busy machine does not fail the build.
 
@@ -29,6 +30,8 @@ fn best_of(sandbox: &Sandbox, arguments: &[&str]) -> Duration {
 
 /// Puts 10,000 specimens into the workspace directly, as a script loading data would.
 async fn load_ten_thousand(sandbox: &Sandbox) {
+    // The sample feature creates its tables the first time it is used in a workspace.
+    sandbox.ok(&["specimen", "list", "--quiet"]);
     let database = sandbox.work().join(".trcli/trcli.db");
     let mut options = sea_orm::ConnectOptions::new("sqlite:trcli-test");
     options

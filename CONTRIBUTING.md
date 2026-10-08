@@ -46,8 +46,18 @@ The structural gates, each a test file at the repository root:
 | `tests/sample_kind_is_external.rs` | a source file of any crate names a sample record kind |
 | `tests/forms_agree.rs` | the form for people leaves out something the structured form says |
 
-Timings (`tests/performance.rs`) are run on purpose:
-`cargo test --release -p trcli-cli --test performance --example sample_kinds --features test-clock -- --ignored`.
+A single suite that runs the tool with the sample kinds (`bdd`, `usage`, `forms_agree`,
+`any_script`, `performance`) needs the example built first, with the same features and
+profile — running every test builds it for you:
+
+```sh
+cargo build -p trcli-cli --example sample_kinds --features test-clock
+cargo test -p trcli-cli --test bdd --features test-clock
+```
+
+Timings (`tests/performance.rs`) are run on purpose, after building the example with
+`--release`:
+`cargo test --release -p trcli-cli --test performance --features test-clock -- --ignored`.
 
 ## The order of work
 
@@ -62,7 +72,7 @@ constitution that a reviewer will ask you to show.
    use case with in-memory fakes, then the adapter with the contract suite.
 3. **The code** that makes them pass.
 4. **The usage guide**, `docs/usage/<noun>.md`, with examples. Write the commands, then run
-   `TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --example sample_kinds --features test-clock`
+   `TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --features test-clock`
    to fill in what the tool prints, and read the difference before committing it.
 
 Open one pull request per phase of your spec's `tasks.md`, stacked on the previous one.

@@ -30,9 +30,11 @@ cargo test --workspace --features trcli-cli/test-clock
 cargo test -p trcli-cli --test layering                     # the dependency graph obeys the layers
 cargo test -p trcli-cli --test scenario_coverage            # every acceptance scenario has an automated check
 cargo test -p trcli-cli --test help_examples                # every command has help with an example
-cargo test -p trcli-cli --test bdd --example sample_kinds --features test-clock
-cargo test -p trcli-cli --test usage --example sample_kinds --features test-clock
-cargo test --release -p trcli-cli --test performance --example sample_kinds --features test-clock -- --ignored
+cargo build -p trcli-cli --example sample_kinds --features test-clock   # what the next two run against
+cargo test -p trcli-cli --test bdd --features test-clock
+cargo test -p trcli-cli --test usage --features test-clock
+cargo build --release -p trcli-cli --example sample_kinds --features test-clock
+cargo test --release -p trcli-cli --test performance --features test-clock -- --ignored
 ```
 
 **Expected**: every command exits 0. CI runs the same on Linux, macOS, and Windows.

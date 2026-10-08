@@ -21,7 +21,6 @@ path = "src/main.rs"
 [[example]]
 name = "sample_kinds"
 path = "examples/sample_kinds/main.rs"
-test = true
 
 # The black-box tests of the binary live at the repository root, beside the feature files
 # they run. They belong to this package because it builds the binary they test.

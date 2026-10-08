@@ -7,7 +7,10 @@
 //! gets its own temporary directory, a fixed clock, and seeded identifiers, so that it
 //! gives the same output on every run and on every system.
 //!
-//! Run with: `cargo test --test bdd --example sample_kinds --features test-clock`.
+//! Run with every other test (`cargo test --workspace --features trcli-cli/test-clock`),
+//! or alone, after building the example the scenarios run against:
+//! `cargo build -p trcli-cli --example sample_kinds --features test-clock` and then
+//! `cargo test -p trcli-cli --test bdd --features test-clock`.
 
 mod steps;
 mod world;

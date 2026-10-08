@@ -33,7 +33,12 @@ Scenario: An unknown kind is answered with the kinds that exist
   And stderr contains "specimen, sample-note"
 ```
 
-Run `cargo test -p trcli-cli --test bdd --example sample_kinds --features test-clock` and see them fail.
+Build the example the scenarios run against, then run them and see them fail:
+
+```sh
+cargo build -p trcli-cli --example sample_kinds --features test-clock
+cargo test -p trcli-cli --test bdd --features test-clock
+```
 
 ## 2. The use case, with its test first
 
@@ -159,7 +164,7 @@ $ trcli tag list
 then fill in what it prints and read the result:
 
 ```sh
-TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --example sample_kinds --features test-clock
+TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --features test-clock
 git diff docs/usage
 ```
 
