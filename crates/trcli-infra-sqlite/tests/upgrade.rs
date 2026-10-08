@@ -157,7 +157,8 @@ impl trcli_application::ports::workspace::BackupCopy for NoCopy {
 
 /// The directories under `crates/trcli-infra-sqlite/tests/fixtures/formats/`, one per released format.
 fn fixtures() -> Vec<PathBuf> {
-    let formats = Path::new(env!("CARGO_MANIFEST_DIR")).join("crates/trcli-infra-sqlite/tests/fixtures/formats");
+    let formats = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("crates/trcli-infra-sqlite/tests/fixtures/formats");
     let Ok(entries) = std::fs::read_dir(formats) else {
         return Vec::new();
     };

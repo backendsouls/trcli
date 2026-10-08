@@ -202,7 +202,10 @@ pub fn files_under(directory: &Path, extensions: &[&str]) -> Vec<PathBuf> {
 
 /// The feature files of every specification.
 pub fn feature_files() -> Vec<PathBuf> {
-    files_under(&repository().join("crates/trcli-cli/tests/features"), &["feature"])
+    files_under(
+        &repository().join("crates/trcli-cli/tests/features"),
+        &["feature"],
+    )
 }
 
 /// A scenario of a feature file: its tags and the command lines it runs.
