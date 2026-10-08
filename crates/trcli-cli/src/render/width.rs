@@ -48,7 +48,10 @@ pub fn pad(text: &str, columns: usize) -> String {
 /// a researcher, or a script, can say), else what the terminal reports, else the default.
 pub fn terminal_width(columns_variable: Option<&str>, reported: Option<usize>) -> usize {
     let stated = columns_variable.and_then(|columns| columns.trim().parse::<usize>().ok());
-    stated.or(reported).unwrap_or(DEFAULT_WIDTH).max(MINIMUM_WIDTH)
+    stated
+        .or(reported)
+        .unwrap_or(DEFAULT_WIDTH)
+        .max(MINIMUM_WIDTH)
 }
 
 /// The width of the terminal standard output is connected to, if it is one.
@@ -73,9 +76,18 @@ mod tests {
 
     #[test]
     fn shortening_ends_with_the_ellipsis_and_fits() {
-        assert_eq!(shorten("Attention Is All You Need", 12, "…"), "Attention I…");
-        assert_eq!(shorten("Attention Is All You Need", 12, "..."), "Attention...");
-        assert_eq!(display_width(&shorten("Attention Is All You Need", 12, "…")), 12);
+        assert_eq!(
+            shorten("Attention Is All You Need", 12, "…"),
+            "Attention I…"
+        );
+        assert_eq!(
+            shorten("Attention Is All You Need", 12, "..."),
+            "Attention..."
+        );
+        assert_eq!(
+            display_width(&shorten("Attention Is All You Need", 12, "…")),
+            12
+        );
         assert_eq!(shorten("short", 12, "…"), "short");
     }
 

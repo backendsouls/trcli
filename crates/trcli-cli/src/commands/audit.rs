@@ -43,7 +43,13 @@ async fn filters(
     let (input, record) = input;
     let record = resolve_option(unit, checker, "--record", record).await?;
     let record = record.map(|record| record.id);
-    Ok(check_filters(checker, input, record, &session.registries.kinds, session.page_size()))
+    Ok(check_filters(
+        checker,
+        input,
+        record,
+        &session.registries.kinds,
+        session.page_size(),
+    ))
 }
 
 /// `trcli audit list [filters]`.
@@ -60,7 +66,13 @@ async fn list_entries(session: &mut Session, arguments: &AuditFilters) -> Result
     let storage = session.storage(Access::Read).await?;
     let unit = storage.read().await?;
     let mut checker = Checker::new();
-    let filter = filters(session, &unit, &mut checker, (&input, arguments.record.as_deref())).await?;
+    let filter = filters(
+        session,
+        &unit,
+        &mut checker,
+        (&input, arguments.record.as_deref()),
+    )
+    .await?;
     let valid = checker.finish(|| filter.expect("checked"))?;
     Ok(Reply::new(list(&unit, &valid.command).await?).with_warnings(valid.warnings))
 }
@@ -71,7 +83,10 @@ async fn verify_trail(session: &mut Session) -> Result<Reply, Problem> {
     let unit = storage.read().await?;
     let head = session.head()?.read_head()?;
     match verify(&unit, head, &AppDigest::default(), &mut session.progress).await? {
-        TrailVerdict::Intact { entries } => Ok(Reply::new(Verified { intact: true, entries })),
+        TrailVerdict::Intact { entries } => Ok(Reply::new(Verified {
+            intact: true,
+            entries,
+        })),
         TrailVerdict::Broken(finding) => Err(finding.into_problem()),
     }
 }
@@ -90,8 +105,18 @@ async fn export(session: &mut Session, arguments: &ExportArgs) -> Result<Reply, 
     let storage = session.storage(Access::Write).await?;
     let mut unit = storage.begin().await?;
     let mut checker = Checker::new();
-    let filter = filters(session, &unit, &mut checker, (&input, arguments.record.as_deref())).await?;
-    let command = ExportCommand::check(&mut checker, arguments.to.as_deref(), arguments.format.as_deref());
+    let filter = filters(
+        session,
+        &unit,
+        &mut checker,
+        (&input, arguments.record.as_deref()),
+    )
+    .await?;
+    let command = ExportCommand::check(
+        &mut checker,
+        arguments.to.as_deref(),
+        arguments.format.as_deref(),
+    );
     let valid = checker.finish(|| (filter.expect("checked"), command.expect("checked")))?;
     let (filter, command) = valid.command;
 
@@ -100,8 +125,12 @@ async fn export(session: &mut Session, arguments: &ExportArgs) -> Result<Reply, 
     let workspace = unit.workspace().await?;
     // The file is written before the export is recorded: an entry never says that a
     // report exists when it does not.
-    session.write_file(&command.to, &report(&entries, command.format, workspace.name.as_str()))?;
-    let exported = record_export(&mut unit, &session.stamp(), &command, entries.len() as u64).await?;
+    session.write_file(
+        &command.to,
+        &report(&entries, command.format, workspace.name.as_str()),
+    )?;
+    let exported =
+        record_export(&mut unit, &session.stamp(), &command, entries.len() as u64).await?;
     finish(session, unit).await?;
     Ok(Reply::new(exported).with_warnings(valid.warnings))
 }
@@ -112,28 +141,48 @@ async fn confirm_overwrite(session: &mut Session, command: &ExportCommand) -> Re
         return Ok(());
     }
     let what = format!("Writing over {}", command.to.display());
-    match session.prompter.confirm(&format!("{} exists. Write over it?", command.to.display())).await {
+    match session
+        .prompter
+        .confirm(&format!("{} exists. Write over it?", command.to.display()))
+        .await
+    {
         Confirmation::Yes => Ok(()),
         Confirmation::No => Err(Problem::declined(&what)),
-        Confirmation::CannotAsk => Err(Problem::confirmation_required(&what, vec![command.to.display().to_string()])),
+        Confirmation::CannotAsk => Err(Problem::confirmation_required(
+            &what,
+            vec![command.to.display().to_string()],
+        )),
     }
 }
 
 /// Runs one verb of `trcli telemetry`.
-pub async fn telemetry(session: &mut Session, command: &TelemetryCommand) -> Result<Reply, Problem> {
+pub async fn telemetry(
+    session: &mut Session,
+    command: &TelemetryCommand,
+) -> Result<Reply, Problem> {
     match command {
         TelemetryCommand::Show => {
             let storage = session.storage(Access::Read).await?;
             let unit = storage.read().await?;
-            Ok(Reply::new(summarise(&unit, session.telemetry_enabled()).await?))
+            Ok(Reply::new(
+                summarise(&unit, session.telemetry_enabled()).await?,
+            ))
         }
         // Turning telemetry on or off is setting `telemetry.enabled` for the workspace,
         // audit entry included.
-        TelemetryCommand::On => config::store(session, TELEMETRY_ENABLED, "true", Place::Workspace).await,
-        TelemetryCommand::Off => config::store(session, TELEMETRY_ENABLED, "false", Place::Workspace).await,
+        TelemetryCommand::On => {
+            config::store(session, TELEMETRY_ENABLED, "true", Place::Workspace).await
+        }
+        TelemetryCommand::Off => {
+            config::store(session, TELEMETRY_ENABLED, "false", Place::Workspace).await
+        }
         TelemetryCommand::Status => {
             session.located()?;
-            let state = if session.telemetry_enabled() { "on" } else { "off" };
+            let state = if session.telemetry_enabled() {
+                "on"
+            } else {
+                "off"
+            };
             Ok(Reply::new(Done::new(format!(
                 "Telemetry is {state}. It is kept in this workspace only and is never sent anywhere."
             ))))

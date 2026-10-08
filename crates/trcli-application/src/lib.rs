@@ -8,9 +8,9 @@
 //! - [`kinds`] and [`settings`] hold the registries through which a feature plugs in
 //!   without the foundation knowing it (FR-068).
 //! - [`workspace`], [`records`], and [`governance`] are the foundation's own use cases.
-//! - [`testing`] (feature `test-support`) has in-memory fakes of every port and the
+//! - `testing` (feature `test-support`) has in-memory fakes of every port and the
 //!   contract suites every adapter must pass.
-//! - [`sample`] (feature `sample-kind`) has two sample record kinds that prove the
+//! - `sample` (feature `sample-kind`) has two sample record kinds that prove the
 //!   feature contract; no release build enables it.
 //!
 //! This crate deliberately does **not** name any adapter, parse a command line, or render

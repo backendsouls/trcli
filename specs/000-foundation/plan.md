@@ -32,11 +32,11 @@ libraries to a minimum.
 
 **Language/Version**: Rust 1.96, edition 2024
 
-**Primary Dependencies**: clap 4.6 + clap_complete (command line, help, completion), SeaORM 2.0 + sea-orm-migration (storage), tokio 1.53 with only `rt`, `macros`, `signal` (the runtime SeaORM needs; Ctrl-C), time 0.3 (dates), uuid 1.27 (identifiers), serde + serde_json (structured output), toml 1.1 (settings files), sha2 0.11 (audit chain), thiserror 2.0 (error types), unicode-normalization 0.1 and unicode-width 0.2 (search and alignment in any script), terminal_size 0.4. Colour comes from anstream/anstyle, which clap already brings in. Fifteen direct runtime crates; each is justified in [research.md](./research.md) §3.
+**Primary Dependencies**: clap 4.6 + clap_complete (command line, help, completion), SeaORM 2.0 + sea-orm-migration (storage), tokio 1.53 with only `rt`, `macros`, `signal` (the runtime SeaORM needs; Ctrl-C), time 0.3 (dates), uuid 1.27 (identifiers), serde + serde_json (structured output), toml 1.1 (settings files), sha2 0.11 (audit chain), thiserror 2.0 (error types), unicode-normalization 0.1 and unicode-width 0.2 (search and alignment in any script), terminal_size 0.4. Styles come from anstyle, which clap already brings in. Fifteen direct runtime crates; each is justified in [research.md](./research.md) §3, with what implementation changed.
 
 **Storage**: Local only — one SQLite database per workspace at `<workspace>/.trcli/trcli.db` (path configurable), with `config.toml`, `audit.head`, and `backups/` beside it; user settings in the platform's configuration directory
 
-**Testing**: `cargo test` for unit tests with in-memory fakes of every port; contract tests run against both the fakes and the SQLite adapter; cucumber 0.23 + assert_cmd running the spec's Gherkin scenarios against the built `trcli` binary; trycmd executing the examples in `docs/usage/*.md`. Test crates are development dependencies only.
+**Testing**: `cargo test` for unit tests with in-memory fakes of every port; contract tests run against both the fakes and the SQLite adapter; cucumber 0.23 running the spec's Gherkin scenarios against the built `trcli` binary; our own runner (`tests/usage.rs`) executing the examples in `docs/usage/*.md`. Test crates are development dependencies only.
 
 **Target Platform**: Linux, macOS, and Windows (x86_64 and aarch64), one self-contained binary with SQLite compiled in
 
@@ -60,7 +60,7 @@ libraries to a minimum.
 | IV. BDD | Given/When/Then for every user-facing feature, automated | The spec's 95 acceptance scenarios are automated: 89 as Gherkin run against the compiled binary, and six contributor scenarios (User Story 8, 3 to 7 and 9) as structural tests — scenario coverage, invalid-input coverage, documentation and help examples, the three-system CI matrix, layering, and upgrades. Every scenario is tagged with the one it automates, and `tests/scenario_coverage.rs` fails when one is missing. Generic steps mean later features add scenarios, not step code. | PASS |
 | V. Input Validation (non-negotiable) | All input validated at the boundary; clear message; non-zero exit; tests per input | One mechanism for all features: clap for syntax, validating command constructors that report every problem together, value objects, and one `Problem` format. Exit code 2. A gate checks that every command has scenarios for invalid input. | PASS |
 | VI. Full Code Documentation | Doc comment on every module and public item | `missing_docs` denied for public items and `clippy::missing_docs_in_private_items` for private ones; `cargo doc` with warnings as errors. Undocumented code does not build. | PASS |
-| VII. Feature Docs and Usage Guides | Usage Markdown per feature, shipped with it | `docs/usage/<noun>.md` per command group; examples executed by trycmd (FR-058); a test fails if a command has no help example or a command group has no guide. | PASS |
+| VII. Feature Docs and Usage Guides | Usage Markdown per feature, shipped with it | `docs/usage/<noun>.md` per command group; examples executed by `tests/usage.rs` (FR-058); a test fails if a command has no help example or a command group has no guide. | PASS |
 
 **Rules from the user's planning inputs across this project**, treated as gates:
 
@@ -165,7 +165,7 @@ crates/
 tests/                          # black-box tests of the binary
 ├── features/foundation/        # Gherkin, one file per user story (8)
 ├── bdd/                        # cucumber world and generic steps, reused by every feature
-├── usage.rs                    # trycmd over docs/usage/*.md
+├── usage.rs                    # runs every example of docs/usage/*.md
 ├── help_examples.rs            # every command has help with an example; every group has a guide
 ├── layering.rs                 # the dependency graph obeys the layers (FR-070)
 ├── scenario_coverage.rs        # every acceptance scenario of the spec has an automated check

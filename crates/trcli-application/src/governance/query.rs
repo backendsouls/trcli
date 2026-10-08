@@ -33,7 +33,15 @@ pub struct AuditInput {
 
 impl Default for AuditInput {
     fn default() -> Self {
-        Self { kind: None, actor: None, action: None, from: None, to: None, to_name: "--to".to_owned(), limit: None }
+        Self {
+            kind: None,
+            actor: None,
+            action: None,
+            from: None,
+            to: None,
+            to_name: "--to".to_owned(),
+            limit: None,
+        }
     }
 }
 
@@ -48,13 +56,17 @@ pub fn check_filters(
     kinds: &KindRegistry,
     default_limit: u32,
 ) -> Option<AuditFilter> {
-    let kind = checker.optional("--kind", input.kind.as_deref(), |kind| known_kind(kind, kinds));
+    let kind = checker.optional("--kind", input.kind.as_deref(), |kind| {
+        known_kind(kind, kinds)
+    });
     let actor = checker.optional("--actor", input.actor.as_deref(), non_empty);
     let action = checker.optional("--action", input.action.as_deref(), known_action);
     let from = checker.optional("--from", input.from.as_deref(), date);
     let to = checker.optional(&input.to_name, input.to.as_deref(), date);
-    let limit = checker.optional("--limit", input.limit.as_deref(), |limit| integer_in_range(limit, 1, 1000));
-    // A rule between two values, each valid alone (FR-027).
+    let limit = checker.optional("--limit", input.limit.as_deref(), |limit| {
+        integer_in_range(limit, 1, 1000)
+    });
+    // A rule between two values, each valid alone (FR-021).
     if let (Some(Some(from)), Some(Some(to)), Some(raw)) = (from, to, input.to.as_deref())
         && let Err(rejection) = not_before(from, to)
     {

@@ -2,7 +2,7 @@
 //!
 //! Each trait is named for what its caller needs, not for what implements it, and is kept
 //! small so that a use case's type parameters list exactly what it uses. Every port has an
-//! in-memory fake in [`crate::testing`] and passes the same contract tests as its real
+//! in-memory fake in the `testing` module and passes the same contract tests as its real
 //! adapter.
 //!
 //! Only ports that reach storage, or wait for a person, are `async`.

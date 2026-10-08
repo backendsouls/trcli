@@ -23,11 +23,15 @@ pub enum ConfigCommand {
     Get(KeyArgs),
 
     /// Set a setting for this workspace, or for yourself with --user
-    #[command(after_long_help = "Example:\n  trcli config set output.color never\n  trcli config set --user output.page_size 20")]
+    #[command(
+        after_long_help = "Example:\n  trcli config set output.color never\n  trcli config set --user output.page_size 20"
+    )]
     Set(SetArgs),
 
     /// Remove your value of a setting, so that the next source applies again
-    #[command(after_long_help = "Example:\n  trcli config unset output.color\n  trcli config unset --user output.page_size")]
+    #[command(
+        after_long_help = "Example:\n  trcli config unset output.color\n  trcli config unset --user output.page_size"
+    )]
     Unset(UnsetArgs),
 
     /// Show where the settings files are

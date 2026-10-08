@@ -40,15 +40,21 @@ pub struct InitArgs {
 #[derive(Clone, Debug, Subcommand)]
 pub enum WorkspaceCommand {
     /// Show the workspace's name, description, location, format, and record counts
-    #[command(after_long_help = "Example:\n  trcli workspace show\n  trcli workspace show --output json")]
+    #[command(
+        after_long_help = "Example:\n  trcli workspace show\n  trcli workspace show --output json"
+    )]
     Show,
 
     /// Change the workspace's details; only what you name is changed
-    #[command(after_long_help = "Example:\n  trcli workspace edit --name \"Doctorate (2026)\"\n  trcli workspace edit --researcher \"Ana Souza\"")]
+    #[command(
+        after_long_help = "Example:\n  trcli workspace edit --name \"Doctorate (2026)\"\n  trcli workspace edit --researcher \"Ana Souza\""
+    )]
     Edit(EditArgs),
 
     /// Bring an older workspace to the current format, keeping a copy first
-    #[command(after_long_help = "Example:\n  trcli workspace upgrade --check\n  trcli workspace upgrade")]
+    #[command(
+        after_long_help = "Example:\n  trcli workspace upgrade --check\n  trcli workspace upgrade"
+    )]
     Upgrade(UpgradeArgs),
 
     /// Verify that the stored data is consistent and the audit trail is intact

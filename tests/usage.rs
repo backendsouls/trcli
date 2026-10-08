@@ -69,7 +69,11 @@ fn examples(text: &str) -> Vec<Example> {
             in_console = !in_console && line.trim() == "```console";
         } else if in_console {
             if let Some(command) = line.strip_prefix("$ ") {
-                examples.push(Example { line: index + 1, command: command.to_owned(), expected: Vec::new() });
+                examples.push(Example {
+                    line: index + 1,
+                    command: command.to_owned(),
+                    expected: Vec::new(),
+                });
             } else if let Some(example) = examples.last_mut() {
                 example.expected.push(line.to_owned());
             }
@@ -88,7 +92,10 @@ fn line_matches(expected: &str, actual: &str) -> bool {
     // The line must begin with what comes before the first wildcard and end with what
     // comes after the last; the parts between must appear in order in what is left.
     let (first, last) = (parts[0], parts[parts.len() - 1]);
-    if actual.len() < first.len() + last.len() || !actual.starts_with(first) || !actual.ends_with(last) {
+    if actual.len() < first.len() + last.len()
+        || !actual.starts_with(first)
+        || !actual.ends_with(last)
+    {
         return false;
     }
     let mut rest = &actual[first.len()..actual.len() - last.len()];
@@ -106,8 +113,12 @@ fn line_matches(expected: &str, actual: &str) -> bool {
 fn lines_match(expected: &[&str], actual: &[&str]) -> bool {
     match expected.split_first() {
         None => actual.is_empty(),
-        Some((&"...", rest)) => (0..=actual.len()).any(|skipped| lines_match(rest, &actual[skipped..])),
-        Some((first, rest)) => actual.split_first().is_some_and(|(line, others)| line_matches(first, line) && lines_match(rest, others)),
+        Some((&"...", rest)) => {
+            (0..=actual.len()).any(|skipped| lines_match(rest, &actual[skipped..]))
+        }
+        Some((first, rest)) => actual
+            .split_first()
+            .is_some_and(|(line, others)| line_matches(first, line) && lines_match(rest, others)),
     }
 }
 
@@ -115,7 +126,10 @@ fn lines_match(expected: &[&str], actual: &[&str]) -> bool {
 /// error, then the exit code when it is not 0.
 fn printed(finished: &Finished, home: &str) -> Vec<String> {
     let text = format!("{}{}", finished.stdout, finished.stderr).replace(home, "[..]");
-    let mut lines: Vec<String> = text.lines().map(|line| line.trim_end().to_owned()).collect();
+    let mut lines: Vec<String> = text
+        .lines()
+        .map(|line| line.trim_end().to_owned())
+        .collect();
     if finished.code != 0 {
         lines.push(format!("[exit {}]", finished.code));
     }
@@ -129,7 +143,12 @@ fn run_guide(text: &str, guide: &str) -> Vec<(Example, Vec<String>)> {
     let mut results = Vec::new();
     for example in examples(text) {
         let words = split(&example.command);
-        assert_eq!(words.first().map(String::as_str), Some("trcli"), "{guide}:{}: only `trcli` commands can be checked", example.line);
+        assert_eq!(
+            words.first().map(String::as_str),
+            Some("trcli"),
+            "{guide}:{}: only `trcli` commands can be checked",
+            example.line
+        );
         let arguments: Vec<&str> = words[1..].iter().map(String::as_str).collect();
         let finished = sandbox.run(&arguments);
         results.push((example, printed(&finished, &home)));
@@ -149,7 +168,12 @@ fn bless(text: &str, results: &[(Example, Vec<String>)]) -> String {
         } else if in_console {
             if line.starts_with("$ ") {
                 blessed.push(line.to_owned());
-                blessed.extend(results.next().map(|(_, printed)| printed.clone()).unwrap_or_default());
+                blessed.extend(
+                    results
+                        .next()
+                        .map(|(_, printed)| printed.clone())
+                        .unwrap_or_default(),
+                );
             }
             // The old expected lines are dropped: the new ones were just written.
         } else {
@@ -166,7 +190,11 @@ fn every_example_in_every_usage_guide_behaves_as_written() {
     let mut failures = Vec::new();
     let mut checked = 0;
     for guide in common::files_under(&directory, &["md"]) {
-        let name = guide.file_name().expect("a file name").to_string_lossy().into_owned();
+        let name = guide
+            .file_name()
+            .expect("a file name")
+            .to_string_lossy()
+            .into_owned();
         let text = std::fs::read_to_string(&guide).expect("a guide");
         let results = run_guide(&text, &name);
         checked += results.len();
@@ -175,8 +203,17 @@ fn every_example_in_every_usage_guide_behaves_as_written() {
             continue;
         }
         for (example, actual) in &results {
-            let expected: Vec<&str> = example.expected.iter().map(String::as_str).filter(|line| !line.trim().is_empty()).collect();
-            let actual: Vec<&str> = actual.iter().map(String::as_str).filter(|line| !line.trim().is_empty()).collect();
+            let expected: Vec<&str> = example
+                .expected
+                .iter()
+                .map(String::as_str)
+                .filter(|line| !line.trim().is_empty())
+                .collect();
+            let actual: Vec<&str> = actual
+                .iter()
+                .map(String::as_str)
+                .filter(|line| !line.trim().is_empty())
+                .collect();
             if !lines_match(&expected, &actual) {
                 failures.push(format!(
                     "{name}:{}: $ {}\n  the guide says:\n    {}\n  the tool prints:\n    {}",
@@ -188,18 +225,45 @@ fn every_example_in_every_usage_guide_behaves_as_written() {
             }
         }
     }
-    assert!(checked >= 30, "the guides hold the examples this test runs (found {checked})");
-    assert!(failures.is_empty(), "{} example(s) do not behave as written:\n\n{}", failures.len(), failures.join("\n\n"));
+    assert!(
+        checked >= 30,
+        "the guides hold the examples this test runs (found {checked})"
+    );
+    assert!(
+        failures.is_empty(),
+        "{} example(s) do not behave as written:\n\n{}",
+        failures.len(),
+        failures.join("\n\n")
+    );
 }
 
 #[test]
 fn the_matching_rules_are_what_the_guides_rely_on() {
-    assert!(line_matches("Created workspace \"Doctorate\" in [..]/.trcli", "Created workspace \"Doctorate\" in /tmp/x/work/.trcli"));
-    assert!(!line_matches("Created workspace \"Doctorate\" in [..]/.trcli", "Created workspace \"Other\" in /tmp/x/work/.trcli"));
+    assert!(line_matches(
+        "Created workspace \"Doctorate\" in [..]/.trcli",
+        "Created workspace \"Doctorate\" in /tmp/x/work/.trcli"
+    ));
+    assert!(!line_matches(
+        "Created workspace \"Doctorate\" in [..]/.trcli",
+        "Created workspace \"Other\" in /tmp/x/work/.trcli"
+    ));
     assert!(line_matches("exact", "exact") && !line_matches("exact", "exact and more"));
     assert!(line_matches("starts [..]", "starts with anything"));
-    assert!(lines_match(&["first", "...", "last"], &["first", "a", "b", "last"]));
+    assert!(lines_match(
+        &["first", "...", "last"],
+        &["first", "a", "b", "last"]
+    ));
     assert!(lines_match(&["first", "..."], &["first"]));
     assert!(!lines_match(&["first", "last"], &["first", "a", "last"]));
-    assert_eq!(split("trcli init --name \"My Lab\" --description 'two words'"), ["trcli", "init", "--name", "My Lab", "--description", "two words"]);
+    assert_eq!(
+        split("trcli init --name \"My Lab\" --description 'two words'"),
+        [
+            "trcli",
+            "init",
+            "--name",
+            "My Lab",
+            "--description",
+            "two words"
+        ]
+    );
 }

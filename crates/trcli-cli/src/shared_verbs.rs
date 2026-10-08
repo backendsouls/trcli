@@ -22,7 +22,10 @@ use crate::output::Reply;
 
 /// The argument that names a record.
 fn reference() -> Arg {
-    Arg::new("ref").value_name("REF").required(true).help("Short name of the record, or a unique beginning of it")
+    Arg::new("ref")
+        .value_name("REF")
+        .required(true)
+        .help("Short name of the record, or a unique beginning of it")
 }
 
 /// The text of one string argument, when given.
@@ -32,13 +35,19 @@ fn text(matches: &ArgMatches, name: &str) -> Option<String> {
 
 /// The texts of a repeatable argument.
 fn texts(matches: &ArgMatches, name: &str) -> Vec<String> {
-    matches.get_many::<String>(name).map(|values| values.cloned().collect()).unwrap_or_default()
+    matches
+        .get_many::<String>(name)
+        .map(|values| values.cloned().collect())
+        .unwrap_or_default()
 }
 
 /// `<noun> list`.
 fn list_command(descriptor: &RecordKindDescriptor) -> Command {
     let noun = descriptor.name();
-    let sort_help = format!("Sort by {}, created, updated, or handle [default: {}]", descriptor.name_field, descriptor.name_field);
+    let sort_help = format!(
+        "Sort by {}, created, updated, or handle [default: {}]",
+        descriptor.name_field, descriptor.name_field
+    );
     Command::new("list")
         .about(format!("List {noun} records, filtered, searched, sorted, and limited"))
         .arg(Arg::new("search").long("search").value_name("TEXT").help("Only records whose main text contains these words"))
@@ -85,7 +94,12 @@ pub fn commands(descriptor: &RecordKindDescriptor) -> Vec<Command> {
 
 /// Runs a shared verb for a kind; `None` when the verb is not one of the shared ones, so
 /// that the feature can try its own.
-pub async fn run<K>(session: &mut Session, kind: &K, verb: &str, matches: &ArgMatches) -> Option<Result<Reply, Problem>>
+pub async fn run<K>(
+    session: &mut Session,
+    kind: &K,
+    verb: &str,
+    matches: &ArgMatches,
+) -> Option<Result<Reply, Problem>>
 where
     K: KindBehaviour<AppUnit>,
 {
@@ -101,7 +115,11 @@ where
 }
 
 /// `<noun> list [--search] [--tag]... [--sort] [--desc] [--limit]`.
-async fn list_records(session: &mut Session, descriptor: &RecordKindDescriptor, matches: &ArgMatches) -> Result<Reply, Problem> {
+async fn list_records(
+    session: &mut Session,
+    descriptor: &RecordKindDescriptor,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     let input = ListInput {
         search: text(matches, "search"),
         tags: texts(matches, "tag"),
@@ -116,40 +134,81 @@ async fn list_records(session: &mut Session, descriptor: &RecordKindDescriptor, 
 }
 
 /// `<noun> show <ref>`.
-async fn show_record<K: KindBehaviour<AppUnit>>(session: &mut Session, kind: &K, matches: &ArgMatches) -> Result<Reply, Problem> {
+async fn show_record<K: KindBehaviour<AppUnit>>(
+    session: &mut Session,
+    kind: &K,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     let storage = session.storage(Access::Read).await?;
     let unit = storage.read().await?;
-    Ok(Reply::new(show(&unit, kind, &text(matches, "ref").unwrap_or_default()).await?))
+    Ok(Reply::new(
+        show(&unit, kind, &text(matches, "ref").unwrap_or_default()).await?,
+    ))
 }
 
 /// `<noun> rm <ref>`.
-async fn remove_record<K: KindBehaviour<AppUnit>>(session: &mut Session, kind: &K, matches: &ArgMatches) -> Result<Reply, Problem> {
+async fn remove_record<K: KindBehaviour<AppUnit>>(
+    session: &mut Session,
+    kind: &K,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     let storage = session.storage(Access::Write).await?;
     let mut unit = storage.begin().await?;
     let reference = text(matches, "ref").unwrap_or_default();
-    let deleted = delete(&mut unit, &session.stamp(), kind, &mut session.prompter, &reference).await?;
+    let deleted = delete(
+        &mut unit,
+        &session.stamp(),
+        kind,
+        &mut session.prompter,
+        &reference,
+    )
+    .await?;
     finish(session, unit).await?;
     Ok(Reply::new(deleted))
 }
 
 /// `<noun> tag <ref> <tag>... [--remove]`.
-async fn tag_record(session: &mut Session, descriptor: &RecordKindDescriptor, matches: &ArgMatches) -> Result<Reply, Problem> {
+async fn tag_record(
+    session: &mut Session,
+    descriptor: &RecordKindDescriptor,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     let reference = text(matches, "ref").unwrap_or_default();
-    let valid = TagCommand::new(&reference, &texts(matches, "tags"), matches.get_flag("remove"))?;
+    let valid = TagCommand::new(
+        &reference,
+        &texts(matches, "tags"),
+        matches.get_flag("remove"),
+    )?;
     let storage = session.storage(Access::Write).await?;
     let mut unit = storage.begin().await?;
-    let tagged = tag(&mut unit, &session.stamp(), &[descriptor.name().to_owned()], valid.command).await?;
+    let tagged = tag(
+        &mut unit,
+        &session.stamp(),
+        &[descriptor.name().to_owned()],
+        valid.command,
+    )
+    .await?;
     finish(session, unit).await?;
     Ok(Reply::new(tagged).with_warnings(valid.warnings))
 }
 
 /// `<noun> note <ref> <text>`.
-async fn note_record(session: &mut Session, descriptor: &RecordKindDescriptor, matches: &ArgMatches) -> Result<Reply, Problem> {
+async fn note_record(
+    session: &mut Session,
+    descriptor: &RecordKindDescriptor,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     let reference = text(matches, "ref").unwrap_or_default();
     let valid = NoteCommand::new(&reference, &text(matches, "text").unwrap_or_default())?;
     let storage = session.storage(Access::Write).await?;
     let mut unit = storage.begin().await?;
-    let noted = add_note(&mut unit, &session.stamp(), &[descriptor.name().to_owned()], valid.command).await?;
+    let noted = add_note(
+        &mut unit,
+        &session.stamp(),
+        &[descriptor.name().to_owned()],
+        valid.command,
+    )
+    .await?;
     finish(session, unit).await?;
     Ok(Reply::new(noted).with_warnings(valid.warnings))
 }

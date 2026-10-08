@@ -1,4 +1,4 @@
-//! Checked text: the only way text enters the domain (FR-026, FR-027, FR-067).
+//! Checked text: the only way text enters the domain (FR-021, FR-026, FR-067).
 //!
 //! Every text type here is built through a constructor that trims surrounding whitespace,
 //! rejects control characters other than line break and tab, and enforces a length counted

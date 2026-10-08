@@ -155,3 +155,53 @@ async fn a_database_that_cannot_be_written_to_can_still_be_read() {
 
     std::fs::set_permissions(&directory, read_only(0o755)).expect("directory");
 }
+
+#[tokio::test(flavor = "current_thread")]
+async fn closed_storage_is_one_file_that_holds_everything() {
+    let databases = support::Databases::new();
+    let path = databases.next_path();
+    let storage = SqliteOpener::new(200).create(&path).await.expect("create");
+    let mut unit = storage.begin().await.expect("begin");
+    let name = Name::new("Doctorate").expect("valid");
+    let workspace = Workspace::new(
+        SeededIds::at(0),
+        name,
+        LongText::new("").expect("valid"),
+        stamp().at,
+    );
+    unit.save_workspace(&workspace).await.expect("save");
+    unit.commit().await.expect("commit");
+    storage.close().await.expect("close");
+
+    // No journal is left beside the database: copying the one file copies the workspace.
+    let beside: Vec<String> = std::fs::read_dir(databases.path())
+        .expect("the directory")
+        .filter_map(Result::ok)
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        beside,
+        [path
+            .file_name()
+            .expect("a name")
+            .to_string_lossy()
+            .into_owned()]
+    );
+
+    let copy = databases.path().join("copied.db");
+    std::fs::copy(&path, &copy).expect("copy");
+    let reopened = SqliteOpener::new(200)
+        .open(&copy)
+        .await
+        .expect("open the copy");
+    assert_eq!(
+        reopened
+            .read()
+            .await
+            .expect("read")
+            .workspace()
+            .await
+            .expect("workspace"),
+        workspace
+    );
+}

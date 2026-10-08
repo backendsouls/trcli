@@ -17,8 +17,8 @@ use trcli_application::ports::settings::SettingsSource;
 use trcli_application::ports::unit_of_work::Storage;
 use trcli_application::ports::workspace::{StorageOpener, WorkspaceStore};
 use trcli_application::settings::foundation::{
-    self, DEFAULT_WORKSPACE, OUTPUT_COLOR, OUTPUT_FORMAT, OUTPUT_PAGE_SIZE, RESEARCHER_NAME, STORAGE_BUSY_TIMEOUT_MS,
-    STORAGE_PATH, TELEMETRY_ENABLED,
+    self, DEFAULT_WORKSPACE, OUTPUT_COLOR, OUTPUT_FORMAT, OUTPUT_PAGE_SIZE, RESEARCHER_NAME,
+    STORAGE_BUSY_TIMEOUT_MS, STORAGE_PATH, TELEMETRY_ENABLED,
 };
 use trcli_application::settings::layers::{Resolved, Settings, resolve};
 use trcli_application::settings::registry::SettingsRegistry;
@@ -42,7 +42,9 @@ use trcli_infra_system::locator::{
     workspace_settings_file,
 };
 use trcli_infra_system::paths::current_user_settings_file;
-use trcli_infra_system::settings_files::{CommandLineSource, EnvironmentSource, FileSettings, TomlFileSource};
+use trcli_infra_system::settings_files::{
+    CommandLineSource, EnvironmentSource, FileSettings, TomlFileSource,
+};
 
 use crate::args::global::GlobalArgs;
 use crate::diagnostics::Diagnostics;
@@ -92,7 +94,8 @@ impl Registries {
         #[allow(unused_mut)]
         let mut kinds = KindRegistry::new();
         #[cfg(feature = "sample-kind")]
-        trcli_application::sample::register(&mut kinds).unwrap_or_else(|error| panic!("sample kinds: {error}"));
+        trcli_application::sample::register(&mut kinds)
+            .unwrap_or_else(|error| panic!("sample kinds: {error}"));
         Self { settings, kinds }
     }
 }
@@ -131,7 +134,9 @@ pub struct Session {
 
 /// The path named by a variable of the session, when it is set and not empty.
 fn session_path(name: &str) -> Option<PathBuf> {
-    std::env::var_os(name).filter(|value| !value.is_empty()).map(PathBuf::from)
+    std::env::var_os(name)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
 }
 
 /// The sources of settings, in order of increasing precedence, as trait objects.
@@ -176,10 +181,18 @@ impl Session {
     /// Builds the session of one command: reads the settings, finds the workspace, and
     /// chooses how to ask and show. On failure, the presentation to report it with is
     /// returned too, since the settings that would decide it could not be read.
-    pub fn start(global: GlobalArgs, zone: UtcOffset) -> Result<Self, (Problem, Presentation)> {
+    pub fn start(
+        global: GlobalArgs,
+        zone: UtcOffset,
+    ) -> Result<Self, Box<(Problem, Presentation)>> {
         let fallback = Presentation::before_settings(&global, zone);
         let registries = Registries::of_this_build();
-        let keys: Vec<SettingKey> = registries.settings.all().iter().map(|definition| definition.key.clone()).collect();
+        let keys: Vec<SettingKey> = registries
+            .settings
+            .all()
+            .iter()
+            .map(|definition| definition.key.clone())
+            .collect();
         let user_file = current_user_settings_file();
         let mut sources = Sources {
             user: user_file.clone().map(TomlFileSource::user),
@@ -191,12 +204,23 @@ impl Session {
         };
         // First without a workspace, to learn the researcher's default workspace; then
         // again with the file of the workspace that was found.
-        let personal = sources.resolve(&registries.settings).map_err(|problem| (problem, fallback.clone()))?;
+        let personal = sources
+            .resolve(&registries.settings)
+            .map_err(|problem| Box::new((problem, fallback.clone())))?;
         let located = Self::locate(&global, &personal.settings);
-        let workspace_file = located.as_ref().ok().map(|located| workspace_settings_file(&located.root));
+        let workspace_file = located
+            .as_ref()
+            .ok()
+            .map(|located| workspace_settings_file(&located.root));
         sources.workspace = workspace_file.clone().map(TomlFileSource::workspace);
-        let resolved = sources.resolve(&registries.settings).map_err(|problem| (problem, fallback))?;
-        let found = Found { resolved, located, files: FileSettings::new(user_file, workspace_file) };
+        let resolved = sources
+            .resolve(&registries.settings)
+            .map_err(|problem| Box::new((problem, fallback)))?;
+        let found = Found {
+            resolved,
+            located,
+            files: FileSettings::new(user_file, workspace_file),
+        };
         Ok(Self::assemble(global, registries, found, zone))
     }
 
@@ -212,7 +236,11 @@ impl Session {
             .collect();
         let draws = !global.quiet && std::io::stderr().is_terminal();
         Self {
-            prompter: TerminalPrompter::choose(global.yes, global.no_input, std::io::stdin().is_terminal()),
+            prompter: TerminalPrompter::choose(
+                global.yes,
+                global.no_input,
+                std::io::stdin().is_terminal(),
+            ),
             progress: TerminalProgress::new(std::io::stderr(), draws, presentation.symbols),
             diagnostics: Diagnostics::new(global.verbose),
             global,
@@ -247,26 +275,43 @@ impl Session {
 
     /// Who is acting and when, for this command's audit entries.
     pub fn stamp(&self) -> Stamp {
-        Stamp::new(self.clock.now(), SystemActor::new(self.settings.text(RESEARCHER_NAME)).actor())
+        Stamp::new(
+            self.clock.now(),
+            SystemActor::new(self.settings.text(RESEARCHER_NAME)).actor(),
+        )
     }
 
     /// The opener of storage, waiting as long as the settings say for another writer.
     pub fn opener(&self) -> AppOpener {
-        let timeout = self.settings.integer(STORAGE_BUSY_TIMEOUT_MS).unwrap_or(5000);
+        let timeout = self
+            .settings
+            .integer(STORAGE_BUSY_TIMEOUT_MS)
+            .unwrap_or(5000);
         SqliteOpener::new(u64::try_from(timeout).unwrap_or(5000))
     }
 
     /// Where the workspace's database is.
     pub fn database(&self) -> Result<PathBuf, Problem> {
-        let path = self.settings.text(STORAGE_PATH).unwrap_or(".trcli/trcli.db");
+        let path = self
+            .settings
+            .text(STORAGE_PATH)
+            .unwrap_or(".trcli/trcli.db");
         Ok(database_file(&self.located()?.root, path))
     }
 
     /// Where the database of a workspace about to be created in `root` will be: at the
     /// default location, since a new workspace has no settings of its own yet.
     pub fn new_database_in(&self, root: &Path) -> PathBuf {
-        let default = self.registries.settings.find(STORAGE_PATH).and_then(|definition| definition.default.clone());
-        let path = default.as_ref().and_then(|value| value.as_text()).unwrap_or(".trcli/trcli.db").to_owned();
+        let default = self
+            .registries
+            .settings
+            .find(STORAGE_PATH)
+            .and_then(|definition| definition.default.clone());
+        let path = default
+            .as_ref()
+            .and_then(|value| value.as_text())
+            .unwrap_or(".trcli/trcli.db")
+            .to_owned();
         database_file(root, &path)
     }
 
@@ -288,7 +333,10 @@ impl Session {
     /// Writes a file the researcher asked for, whole or not at all (FR-066).
     pub fn write_file(&self, path: &Path, content: &str) -> Result<(), Problem> {
         write_atomically(path, content.as_bytes()).map_err(|error| {
-            Problem::new(codes::OPERATION_FAILED, format!("{} could not be written: {error}", path.display()))
+            Problem::new(
+                codes::OPERATION_FAILED,
+                format!("{} could not be written: {error}", path.display()),
+            )
         })
     }
 
@@ -312,7 +360,11 @@ impl Session {
             time.minute(),
             time.second()
         );
-        Ok(FileBackup::new(self.database()?, backups_directory(root), &label))
+        Ok(FileBackup::new(
+            self.database()?,
+            backups_directory(root),
+            &label,
+        ))
     }
 
     /// The workspace's storage, opened without asking what state the workspace is in.
@@ -322,7 +374,8 @@ impl Session {
             return Ok(storage.clone());
         }
         let database = self.database()?;
-        self.diagnostics.line(|| format!("opening {}", database.display()));
+        self.diagnostics
+            .line(|| format!("opening {}", database.display()));
         let storage = self.opener().open(&database).await?;
         self.storage = Some(storage.clone());
         Ok(storage)
@@ -349,13 +402,17 @@ impl Session {
         if let Some(storage) = self.storage.take()
             && let Err(error) = storage.close().await
         {
-            self.diagnostics.line(|| format!("the workspace's storage did not close cleanly: {error}"));
+            self.diagnostics
+                .line(|| format!("the workspace's storage did not close cleanly: {error}"));
         }
     }
 
     /// How many rows a list shows unless `--limit` says otherwise.
     pub fn page_size(&self) -> u32 {
-        self.settings.integer(OUTPUT_PAGE_SIZE).and_then(|size| u32::try_from(size).ok()).unwrap_or(50)
+        self.settings
+            .integer(OUTPUT_PAGE_SIZE)
+            .and_then(|size| u32::try_from(size).ok())
+            .unwrap_or(50)
     }
 
     /// Whether local telemetry is recorded in this workspace.

@@ -15,7 +15,10 @@ pub fn report(entries: &[EntryView], format: ExportFormat, workspace_name: &str)
 
 /// A document with one table row per entry.
 fn markdown(entries: &[EntryView], workspace_name: &str) -> String {
-    let mut text = format!("# Audit trail of \"{workspace_name}\"\n\n{} entries.\n\n", entries.len());
+    let mut text = format!(
+        "# Audit trail of \"{workspace_name}\"\n\n{} entries.\n\n",
+        entries.len()
+    );
     text.push_str("| Seq | When (UTC) | Actor | Action | What |\n|----:|------------|-------|--------|------|\n");
     for entry in entries {
         // A pipe inside a value would end the cell early.
@@ -47,7 +50,10 @@ fn csv(entries: &[EntryView]) -> String {
             .changes
             .iter()
             .map(|change| {
-                let (before, after) = (change.before.as_deref().unwrap_or(""), change.after.as_deref().unwrap_or(""));
+                let (before, after) = (
+                    change.before.as_deref().unwrap_or(""),
+                    change.after.as_deref().unwrap_or(""),
+                );
                 format!("{}: {before} -> {after}", change.field)
             })
             .collect();
@@ -62,7 +68,13 @@ fn csv(entries: &[EntryView]) -> String {
             changes.join("; "),
             entry.hash.clone(),
         ];
-        text.push_str(&fields.iter().map(|field| csv_field(field)).collect::<Vec<_>>().join(","));
+        text.push_str(
+            &fields
+                .iter()
+                .map(|field| csv_field(field))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
         text.push('\n');
     }
     text
@@ -98,7 +110,11 @@ mod tests {
             record_id: None,
             handle: Some("ref-7k3f".into()),
             display_name: Some("Rain, \"heavy\" | cold".into()),
-            changes: vec![ChangeView { field: "title".into(), before: Some("Rain".into()), after: None }],
+            changes: vec![ChangeView {
+                field: "title".into(),
+                before: Some("Rain".into()),
+                after: None,
+            }],
             hash: "ab".repeat(32),
         }
     }
@@ -124,6 +140,9 @@ mod tests {
         let text = report(&[entry()], ExportFormat::Csv, "Doctorate");
         let line = text.lines().nth(1).expect("a line");
         assert!(line.starts_with("3,1970-01-01T00:00:00Z,ana,update,reference,ref-7k3f,\"Rain, \"\"heavy\"\" | cold\",title: Rain -> ,"));
-        assert_eq!(text.lines().next(), Some("sequence,at,actor,action,kind,handle,display_name,changes,hash"));
+        assert_eq!(
+            text.lines().next(),
+            Some("sequence,at,actor,action,kind,handle,display_name,changes,hash")
+        );
     }
 }

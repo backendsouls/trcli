@@ -20,12 +20,19 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings       # includes documentation and readability lints
 cargo doc --workspace --no-deps --document-private-items   # fails on any undocumented item
 
-cargo test --workspace                                      # unit and contract tests
-cargo test --test layering                                  # the dependency graph obeys the layers
-cargo test --test scenario_coverage                         # every acceptance scenario has an automated check
-cargo test --test help_examples                             # every command has help with an example
-cargo test --test usage                                     # examples in docs/usage/*.md
-cargo test --test bdd --features test-clock,sample-kind -- --input tests/features/foundation
+cargo test --workspace                                      # unit, contract, upgrade, and structural tests
+cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind
+                                                            # the same, plus the acceptance scenarios against
+                                                            # the binary, the usage guides' examples, and the
+                                                            # gates that need the sample kinds
+
+# One suite at a time:
+cargo test -p trcli-cli --test layering                     # the dependency graph obeys the layers
+cargo test -p trcli-cli --test scenario_coverage            # every acceptance scenario has an automated check
+cargo test -p trcli-cli --test help_examples                # every command has help with an example
+cargo test -p trcli-cli --test bdd --features test-clock,sample-kind
+cargo test -p trcli-cli --test usage --features test-clock,sample-kind
+cargo test --release -p trcli-cli --test performance --features test-clock,sample-kind -- --ignored
 ```
 
 **Expected**: every command exits 0. CI runs the same on Linux, macOS, and Windows.
@@ -33,7 +40,7 @@ cargo test --test bdd --features test-clock,sample-kind -- --input tests/feature
 To run with the sample record kinds (`specimen`, `sample-note`) that the scenarios of stories 2 and 8 use:
 
 ```sh
-cargo build --features sample-kind      # adds the `specimen` commands; never in a release build
+cargo build -p trcli-cli --features sample-kind      # adds the sample commands; never in a release build
 ```
 
 ## Manual walk-through
@@ -204,7 +211,7 @@ Follow `CONTRIBUTING.md` from a fresh clone and `docs/contributing/adding-a-comm
 
 | Check | How | Expected |
 |-------|-----|----------|
-| Start-up (SC-012) | `time trcli --version`; `time trcli workspace show` | Under 100 ms each |
+| Start-up (SC-012) | `time trcli --version`; `time trcli workspace show` | Under 100 ms each (measured on Linux, release build: 3 ms and 16 ms) |
 | Scale (SC-012) | Load 10,000 specimens from a script; `time trcli specimen list --search x` | Under 2 s |
 | Nothing leaves the machine (SC-010) | Run the whole walk-through with the network disconnected | Everything works |
 | Power loss (SC-008) | Kill the process (`kill -9`) during `specimen slow`; then `trcli audit verify` and `workspace show` | Valid; the change is wholly absent |

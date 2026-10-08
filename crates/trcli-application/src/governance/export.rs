@@ -70,8 +70,13 @@ impl ExportCommand {
                 Ok(PathBuf::from(path))
             }
         });
-        let format = checker.optional("--format", format, |format| one_of(format, &ExportFormat::NAMES));
-        Some(Self { to: to?, format: format?.map_or(ExportFormat::Markdown, |name| ExportFormat::named(&name)) })
+        let format = checker.optional("--format", format, |format| {
+            one_of(format, &ExportFormat::NAMES)
+        });
+        Some(Self {
+            to: to?,
+            format: format?.map_or(ExportFormat::Markdown, |name| ExportFormat::named(&name)),
+        })
     }
 
     /// Checks the destination and the format on their own.

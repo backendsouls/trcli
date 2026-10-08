@@ -51,9 +51,14 @@ fn reject(error: &clap::Error, arguments: &[String], zone: UtcOffset) -> Outcome
     }
     // The command line could not be read, so whether the structured form was asked for
     // is looked for in the raw arguments.
-    let wants_json = arguments.windows(2).any(|pair| pair[0] == "--output" && pair[1] == "json")
+    let wants_json = arguments
+        .windows(2)
+        .any(|pair| pair[0] == "--output" && pair[1] == "json")
         || arguments.iter().any(|argument| argument == "--output=json");
-    let global = GlobalArgs { output: wants_json.then(|| "json".to_owned()), ..GlobalArgs::default() };
+    let global = GlobalArgs {
+        output: wants_json.then(|| "json".to_owned()),
+        ..GlobalArgs::default()
+    };
     let problem = cli::usage_problem(error);
     Presentation::before_settings(&global, zone).fail(&problem);
     problem.outcome()
@@ -61,7 +66,10 @@ fn reject(error: &clap::Error, arguments: &[String], zone: UtcOffset) -> Outcome
 
 /// Runs a parsed command on a single-threaded runtime.
 fn execute(invocation: Invocation, zone: UtcOffset) -> Outcome {
-    let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+    let runtime = match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
         Ok(runtime) => runtime,
         Err(error) => {
             write_error(&format!("error: the tool could not start: {error}\n"));
@@ -77,8 +85,11 @@ fn execute(invocation: Invocation, zone: UtcOffset) -> Outcome {
 
 /// The problem that says the researcher stopped the command.
 fn interrupted() -> Problem {
-    Problem::new(codes::INTERRUPTED, "interrupted before the command finished")
-        .with_next_step("run the command again; what it had not finished was undone")
+    Problem::new(
+        codes::INTERRUPTED,
+        "interrupted before the command finished",
+    )
+    .with_next_step("run the command again; what it had not finished was undone")
 }
 
 /// Builds the session, runs the handler beside Ctrl-C, shows the result, and records the
@@ -87,7 +98,8 @@ async fn run(invocation: Invocation, zone: UtcOffset) -> Outcome {
     let started = Instant::now();
     let mut session = match Session::start(invocation.global.clone(), zone) {
         Ok(session) => session,
-        Err((problem, presentation)) => {
+        Err(failed) => {
+            let (problem, presentation) = *failed;
             presentation.fail(&problem);
             return problem.outcome();
         }
@@ -136,6 +148,8 @@ async fn remember(session: &mut Session, path: &[String], started: Instant, outc
     }
     .await;
     if let Err(problem) = written {
-        session.diagnostics.line(|| format!("telemetry was not recorded: {}", problem.message));
+        session
+            .diagnostics
+            .line(|| format!("telemetry was not recorded: {}", problem.message));
     }
 }

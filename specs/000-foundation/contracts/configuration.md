@@ -57,12 +57,12 @@ cloud-storage client is not supported and can damage the database.
 | `citation.style` | style name or path to a `.csl` file | `apa` | both | Default citation style |
 | `citation.key_pattern` | pattern | `{family}{year}{word}` | both | How citation keys are generated |
 | `bibliography.format` | `bibtex` \| `ris` \| `csl-json` | `bibtex` | both | Default import/export format |
-| `lookup.enabled` | boolean | `true` | both | Allows online lookup of paper details (FR-075) |
+| `lookup.enabled` | boolean | `true` | both | Allows online lookup of paper details |
 | `lookup.timeout_seconds` | integer 1–9 | `8` | both | Total time allowed for a lookup |
 | `lookup.contact_email` | email | unset | user | Sent to catalogues that ask for a contact; nothing is sent when unset |
 | `telemetry.enabled` | boolean | `true` | workspace | Records local telemetry (FR-052). Nothing is ever transmitted. |
 | `environment.tools` | list of program names | `[]` | both | Programs whose versions are captured in snapshots |
-| `environment.variables` | list of variable names | `[]` | both | The only environment variables captured (FR-045) |
+| `environment.variables` | list of variable names | `[]` | both | The only environment variables captured |
 | `run.shell` | `auto` \| path | `auto` | both | Shell used for steps defined with `--shell`: `sh` on Linux and macOS, `cmd` on Windows |
 | `run.step_timeout_seconds` | integer ≥ 0 | `0` (none) | workspace | Stops an automated step that runs longer |
 
@@ -83,7 +83,7 @@ contracts are the authority for its settings; the rules below apply to all of th
 - `environment.variables` refuses names that contain `KEY`, `TOKEN`, `SECRET`, `PASSWORD`,
   `PASSWD`, or `CREDENTIAL` (case-insensitive).
 - `lookup.timeout_seconds` is capped at 9 so that a failed lookup is always reported in
-  under 10 seconds (SC-015).
+  under 10 seconds (a success criterion of `specs/005-literature`).
 - Scope "workspace" settings are ignored, with a warning, when found in the user file;
   scope "user" settings likewise in a workspace file.
 - No setting holds a secret. The tool stores no credentials.

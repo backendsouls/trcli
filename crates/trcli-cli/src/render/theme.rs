@@ -121,7 +121,10 @@ impl Theme {
 
     /// A theme that paints nothing.
     pub fn plain() -> Self {
-        Self { enabled: false, styles: [Style::new(); 6] }
+        Self {
+            enabled: false,
+            styles: [Style::new(); 6],
+        }
     }
 
     /// Whether colour is on.
@@ -176,7 +179,12 @@ mod tests {
 
     /// A context with nothing set: the setting is `auto`.
     fn context() -> ColorContext {
-        ColorContext { flag: None, setting: ColorChoice::Auto, no_color: false, clicolor_off: false }
+        ColorContext {
+            flag: None,
+            setting: ColorChoice::Auto,
+            no_color: false,
+            clicolor_off: false,
+        }
     }
 
     #[test]
@@ -187,30 +195,79 @@ mod tests {
 
     #[test]
     fn no_color_and_clicolor_zero_turn_colour_off_even_on_a_terminal() {
-        assert!(!ColorContext { no_color: true, ..context() }.enabled(true));
-        assert!(!ColorContext { clicolor_off: true, ..context() }.enabled(true));
-        let setting_always = ColorContext { setting: ColorChoice::Always, no_color: true, ..context() };
-        assert!(!setting_always.enabled(true), "the conventions win over the setting");
+        assert!(
+            !ColorContext {
+                no_color: true,
+                ..context()
+            }
+            .enabled(true)
+        );
+        assert!(
+            !ColorContext {
+                clicolor_off: true,
+                ..context()
+            }
+            .enabled(true)
+        );
+        let setting_always = ColorContext {
+            setting: ColorChoice::Always,
+            no_color: true,
+            ..context()
+        };
+        assert!(
+            !setting_always.enabled(true),
+            "the conventions win over the setting"
+        );
     }
 
     #[test]
     fn always_forces_colour_and_never_removes_it() {
-        let forced = ColorContext { flag: Some(ColorChoice::Always), no_color: true, ..context() };
-        assert!(forced.enabled(false), "--color always wins over NO_COLOR and over a pipe");
-        let removed = ColorContext { flag: Some(ColorChoice::Never), setting: ColorChoice::Always, ..context() };
+        let forced = ColorContext {
+            flag: Some(ColorChoice::Always),
+            no_color: true,
+            ..context()
+        };
+        assert!(
+            forced.enabled(false),
+            "--color always wins over NO_COLOR and over a pipe"
+        );
+        let removed = ColorContext {
+            flag: Some(ColorChoice::Never),
+            setting: ColorChoice::Always,
+            ..context()
+        };
         assert!(!removed.enabled(true));
-        assert!(ColorContext { setting: ColorChoice::Always, ..context() }.enabled(false));
-        assert!(!ColorContext { setting: ColorChoice::Never, ..context() }.enabled(true));
+        assert!(
+            ColorContext {
+                setting: ColorChoice::Always,
+                ..context()
+            }
+            .enabled(false)
+        );
+        assert!(
+            !ColorContext {
+                setting: ColorChoice::Never,
+                ..context()
+            }
+            .enabled(true)
+        );
     }
 
     #[test]
     fn painting_adds_codes_only_when_colour_is_on() {
         let on = Theme::from_settings(&Settings::default(), true);
         let painted = on.paint(Meaning::Error, "failed");
-        assert!(painted.starts_with("\u{1b}[") && painted.contains("failed") && painted.ends_with("\u{1b}[0m"));
+        assert!(
+            painted.starts_with("\u{1b}[")
+                && painted.contains("failed")
+                && painted.ends_with("\u{1b}[0m")
+        );
         let off = Theme::from_settings(&Settings::default(), false);
         assert_eq!(off.paint(Meaning::Error, "failed"), "failed");
-        assert_eq!(Theme::plain().paint(Meaning::Handle, "spc-7k3f"), "spc-7k3f");
+        assert_eq!(
+            Theme::plain().paint(Meaning::Handle, "spc-7k3f"),
+            "spc-7k3f"
+        );
     }
 
     #[test]

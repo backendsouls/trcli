@@ -1,4 +1,4 @@
-//! The record index: one row for every record of every kind (FR-010, FR-011, FR-014).
+//! The record index: one row for every record of every kind (FR-010, FR-011, FR-013).
 
 use sea_orm::sea_query::Expr;
 use sea_orm::{

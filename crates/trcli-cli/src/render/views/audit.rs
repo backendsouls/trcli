@@ -34,14 +34,19 @@ impl Render for AuditList {
 
 impl Render for Exported {
     fn render(&self, out: &mut Human) {
-        out.success(&format!("Exported {} audit entries to {} ({})", self.entries, self.file, self.format));
+        out.success(&format!(
+            "Exported {} audit entries to {} ({})",
+            self.entries, self.file, self.format
+        ));
     }
 }
 
 impl Render for TelemetrySummary {
     fn render(&self, out: &mut Human) {
         let state = if self.enabled { "on" } else { "off" };
-        out.line(format!("Telemetry is {state}. It is kept in this workspace only and is never sent anywhere."));
+        out.line(format!(
+            "Telemetry is {state}. It is kept in this workspace only and is never sent anywhere."
+        ));
         if self.items.is_empty() {
             out.notice("No use of the tool has been recorded in this workspace.");
             return;
@@ -59,6 +64,10 @@ impl Render for TelemetrySummary {
                 ]
             })
             .collect();
-        out.table(&["COMMAND", "RUNS", "SUCCEEDED", "MEAN", "LONGEST"], &rows, 0);
+        out.table(
+            &["COMMAND", "RUNS", "SUCCEEDED", "MEAN", "LONGEST"],
+            &rows,
+            0,
+        );
     }
 }

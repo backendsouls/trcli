@@ -35,7 +35,10 @@ fn an_interrupted_write_of_a_settings_file_leaves_the_file_as_it_was() {
     write_atomically(&settings, b"[output]\ncolor = \"never\"\n").expect("the first write");
     let failed = write_atomically_with(&settings, b"[output]\ncolor = \"alw", interrupted);
     assert!(failed.is_err());
-    assert_eq!(std::fs::read_to_string(&settings).expect("readable"), "[output]\ncolor = \"never\"\n");
+    assert_eq!(
+        std::fs::read_to_string(&settings).expect("readable"),
+        "[output]\ncolor = \"never\"\n"
+    );
     assert_eq!(files_in(directory.path()), ["config.toml"]);
 }
 
@@ -59,7 +62,11 @@ fn an_interrupted_copy_before_an_upgrade_leaves_no_partial_copy() {
     let copy = directory.path().join("trcli-copy.db");
     let failed = copy_atomically_with(&database, &copy, interrupted);
     assert!(failed.is_err());
-    assert_eq!(files_in(directory.path()), ["trcli.db"], "no copy, whole or partial, is left");
+    assert_eq!(
+        files_in(directory.path()),
+        ["trcli.db"],
+        "no copy, whole or partial, is left"
+    );
     assert_eq!(std::fs::read(&database).expect("readable").len(), 64 * 1024);
 }
 

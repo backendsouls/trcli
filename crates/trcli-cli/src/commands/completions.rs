@@ -10,7 +10,9 @@ use crate::render::views::Text;
 pub fn run(arguments: &CompletionsArgs) -> Reply {
     let mut script = Vec::new();
     clap_complete::generate(arguments.shell, &mut command(), "trcli", &mut script);
-    Reply::new(Text { text: String::from_utf8_lossy(&script).into_owned() })
+    Reply::new(Text {
+        text: String::from_utf8_lossy(&script).into_owned(),
+    })
 }
 
 #[cfg(test)]
@@ -25,10 +27,16 @@ mod tests {
     #[test]
     fn a_script_is_generated_for_every_supported_shell_and_names_the_commands() {
         for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::PowerShell] {
-            let script = run(&CompletionsArgs { shell }).view.to_json()["text"].as_str().unwrap_or_default().to_owned();
+            let script = run(&CompletionsArgs { shell }).view.to_json()["text"]
+                .as_str()
+                .unwrap_or_default()
+                .to_owned();
             assert!(script.contains("trcli"), "{shell}");
             assert!(script.contains("workspace"), "{shell}");
-            assert!(script.contains("--output") || script.contains("output"), "{shell}");
+            assert!(
+                script.contains("--output") || script.contains("output"),
+                "{shell}"
+            );
         }
     }
 }

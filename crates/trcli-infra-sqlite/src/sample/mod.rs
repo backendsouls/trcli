@@ -12,9 +12,7 @@ use sea_orm::{DatabaseConnection, DbBackend, DbErr, Statement};
 use sea_orm_migration::async_trait::async_trait;
 use sea_orm_migration::sea_orm::ConnectionTrait;
 use sea_orm_migration::sea_query::{Alias, DynIden, IntoIden};
-use sea_orm_migration::{
-    IntoSchemaManagerConnection, MigrationName, MigrationTrait, MigratorTrait, SchemaManager,
-};
+use sea_orm_migration::{MigrationName, MigrationTrait, MigratorTrait, SchemaManager};
 
 /// The statements that create the sample kinds' tables.
 const UP: &str = "

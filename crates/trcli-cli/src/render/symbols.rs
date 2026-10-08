@@ -30,12 +30,22 @@ impl SymbolSet {
     };
 
     /// Plain characters only.
-    pub const ASCII: SymbolSet =
-        SymbolSet { ellipsis: "...", arrow: "->", link: "<->", check: "ok", bullet: "-", spinner: &["|", "/", "-", "\\"] };
+    pub const ASCII: SymbolSet = SymbolSet {
+        ellipsis: "...",
+        arrow: "->",
+        link: "<->",
+        check: "ok",
+        bullet: "-",
+        spinner: &["|", "/", "-", "\\"],
+    };
 
     /// The set named by the `output.symbols` setting.
     pub fn named(name: &str) -> Self {
-        if name == "ascii" { Self::ASCII } else { Self::UNICODE }
+        if name == "ascii" {
+            Self::ASCII
+        } else {
+            Self::UNICODE
+        }
     }
 }
 
@@ -48,8 +58,18 @@ mod tests {
     #[test]
     fn the_plain_set_has_only_plain_characters() {
         let plain = SymbolSet::named("ascii");
-        let all = [plain.ellipsis, plain.arrow, plain.link, plain.check, plain.bullet];
-        assert!(all.iter().chain(plain.spinner).all(|symbol| symbol.is_ascii()));
+        let all = [
+            plain.ellipsis,
+            plain.arrow,
+            plain.link,
+            plain.check,
+            plain.bullet,
+        ];
+        assert!(
+            all.iter()
+                .chain(plain.spinner)
+                .all(|symbol| symbol.is_ascii())
+        );
         assert_eq!(SymbolSet::named("unicode"), SymbolSet::UNICODE);
     }
 }

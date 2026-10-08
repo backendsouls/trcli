@@ -175,7 +175,7 @@ pub fn date(value: &str) -> Result<Date, Rejection> {
     Date::from_calendar_date(year, month, day).map_err(|_| rejection())
 }
 
-/// The rule that an end may not come before its start (FR-027); the rejection names it.
+/// The rule that an end may not come before its start (FR-021); the rejection names it.
 pub fn not_before(start: Date, end: Date) -> Result<(), Rejection> {
     if end < start {
         return Err(Rejection::new(

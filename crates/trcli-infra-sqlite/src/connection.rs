@@ -198,9 +198,12 @@ impl SqliteStorage {
     /// Folds the write-ahead journal back into the database file, so that the file alone
     /// holds everything committed. Done before the file is copied (FR-007).
     pub async fn checkpoint(&self) -> Result<(), StoreError> {
-        self.connection.execute_unprepared("PRAGMA wal_checkpoint(TRUNCATE)").await.map(|_| ()).map_err(store_error)
+        self.connection
+            .execute_unprepared("PRAGMA wal_checkpoint(TRUNCATE)")
+            .await
+            .map(|_| ())
+            .map_err(store_error)
     }
-
 }
 
 impl Storage for SqliteStorage {

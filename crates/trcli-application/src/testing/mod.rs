@@ -1,7 +1,7 @@
 //! Stand-ins for everything outside the application, and the tests every adapter must
 //! pass (feature `test-support`).
 //!
-//! - In-memory fakes of every port: [`unit`] (storage and every store), [`environment`],
+//! - In-memory fakes of every port: [`mod@unit`] (storage and every store), [`environment`],
 //!   [`interaction`], [`settings`], [`workspace`], [`audit`].
 //! - Contract suites, generic over the ports: [`contract_uow`], [`contract_workspace`],
 //!   [`contract_records`], [`contract_audit`]. The same functions run against the fakes

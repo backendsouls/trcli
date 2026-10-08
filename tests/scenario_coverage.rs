@@ -23,17 +23,23 @@ const STRUCTURAL: [(&str, &str); 6] = [
 
 /// How many acceptance scenarios each user story of the specification has.
 fn scenarios_per_story() -> BTreeMap<u32, u32> {
-    let spec = std::fs::read_to_string(common::repository().join("specs/000-foundation/spec.md")).expect("the spec");
+    let spec = std::fs::read_to_string(common::repository().join("specs/000-foundation/spec.md"))
+        .expect("the spec");
     let mut counts = BTreeMap::new();
     let mut story = None;
     for line in spec.lines() {
         if let Some(rest) = line.strip_prefix("### User Story ") {
-            story = rest.split_whitespace().next().and_then(|number| number.parse::<u32>().ok());
+            story = rest
+                .split_whitespace()
+                .next()
+                .and_then(|number| number.parse::<u32>().ok());
         } else if line.starts_with("### ") || line.starts_with("## ") {
             story = None;
         } else if let Some(story) = story {
             // An acceptance scenario is a numbered item that begins with "Given".
-            let numbered = line.split_once(". **Given**").is_some_and(|(number, _)| number.parse::<u32>().is_ok());
+            let numbered = line
+                .split_once(". **Given**")
+                .is_some_and(|(number, _)| number.parse::<u32>().is_ok());
             if numbered {
                 *counts.entry(story).or_insert(0) += 1;
             }
@@ -44,14 +50,26 @@ fn scenarios_per_story() -> BTreeMap<u32, u32> {
 
 /// The scenario tags found in the foundation's feature files.
 fn tags_in_features() -> BTreeSet<String> {
-    common::scenarios().into_iter().flat_map(|scenario| scenario.tags).filter(|tag| tag.starts_with("US")).collect()
+    common::scenarios()
+        .into_iter()
+        .flat_map(|scenario| scenario.tags)
+        .filter(|tag| tag.starts_with("US"))
+        .collect()
 }
 
 #[test]
 fn the_specification_has_the_user_stories_this_test_expects() {
     let counts = scenarios_per_story();
-    assert_eq!(counts.len(), 8, "the foundation has eight user stories: {counts:?}");
-    assert_eq!(counts.values().sum::<u32>(), 95, "the foundation has 95 acceptance scenarios: {counts:?}");
+    assert_eq!(
+        counts.len(),
+        8,
+        "the foundation has eight user stories: {counts:?}"
+    );
+    assert_eq!(
+        counts.values().sum::<u32>(),
+        95,
+        "the foundation has 95 acceptance scenarios: {counts:?}"
+    );
 }
 
 #[test]
@@ -67,23 +85,39 @@ fn every_acceptance_scenario_has_an_automated_check() {
             }
         }
     }
-    assert!(missing.is_empty(), "acceptance scenarios with no automated check: {missing:?}");
+    assert!(
+        missing.is_empty(),
+        "acceptance scenarios with no automated check: {missing:?}"
+    );
 }
 
 #[test]
 fn every_tag_names_a_scenario_that_exists() {
     let counts = scenarios_per_story();
     for tag in tags_in_features() {
-        let (story, scenario) = tag[2..].split_once('-').unwrap_or_else(|| panic!("`@{tag}` is not `@US<n>-<mm>`"));
-        let (story, scenario): (u32, u32) = (story.parse().expect("a story number"), scenario.parse().expect("a number"));
-        let known = counts.get(&story).is_some_and(|count| (1..=*count).contains(&scenario));
-        assert!(known, "`@{tag}` names a scenario the specification does not have");
+        let (story, scenario) = tag[2..]
+            .split_once('-')
+            .unwrap_or_else(|| panic!("`@{tag}` is not `@US<n>-<mm>`"));
+        let (story, scenario): (u32, u32) = (
+            story.parse().expect("a story number"),
+            scenario.parse().expect("a number"),
+        );
+        let known = counts
+            .get(&story)
+            .is_some_and(|count| (1..=*count).contains(&scenario));
+        assert!(
+            known,
+            "`@{tag}` names a scenario the specification does not have"
+        );
     }
 }
 
 #[test]
 fn every_structural_check_named_here_exists() {
     for (tag, file) in STRUCTURAL {
-        assert!(common::repository().join(file).is_file(), "{tag} is said to be covered by {file}, which does not exist");
+        assert!(
+            common::repository().join(file).is_file(),
+            "{tag} is said to be covered by {file}, which does not exist"
+        );
     }
 }

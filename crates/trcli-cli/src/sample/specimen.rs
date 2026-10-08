@@ -7,7 +7,9 @@ use clap::{Arg, ArgMatches, Command};
 use trcli_application::outcome::Problem;
 use trcli_application::ports::interaction::Progress;
 use trcli_application::ports::unit_of_work::Storage;
-use trcli_application::sample::specimen::{AddSpecimen, EditSpecimen, Specimens, add, descriptor, edit};
+use trcli_application::sample::specimen::{
+    AddSpecimen, EditSpecimen, Specimens, add, descriptor, edit,
+};
 use trcli_application::validation::{Checker, integer_in_range};
 use trcli_application::view::Done;
 use trcli_application::workspace::open::Access;
@@ -50,7 +52,11 @@ pub fn command() -> Command {
 }
 
 /// Runs one verb of `trcli specimen`.
-pub async fn run(session: &mut Session, verb: &str, matches: &ArgMatches) -> Result<Reply, Problem> {
+pub async fn run(
+    session: &mut Session,
+    verb: &str,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     if let Some(shared) = shared_verbs::run(session, &Specimens::new(), verb, matches).await {
         return shared;
     }
@@ -58,7 +64,9 @@ pub async fn run(session: &mut Session, verb: &str, matches: &ArgMatches) -> Res
         "add" => add_specimen(session, matches).await,
         "edit" => edit_specimen(session, matches).await,
         "slow" => slow(session, matches).await,
-        _ => Err(Problem::internal(format!("`specimen {verb}` is not a command"))),
+        _ => Err(Problem::internal(format!(
+            "`specimen {verb}` is not a command"
+        ))),
     }
 }
 
@@ -69,7 +77,9 @@ async fn add_specimen(session: &mut Session, matches: &ArgMatches) -> Result<Rep
     let mut unit = storage.begin().await?;
     let added = add(&mut unit, &session.stamp(), &session.ids, valid.command).await?;
     finish(session, unit).await?;
-    Ok(Reply::new(added.command).with_warnings(valid.warnings).with_warnings(added.warnings))
+    Ok(Reply::new(added.command)
+        .with_warnings(valid.warnings)
+        .with_warnings(added.warnings))
 }
 
 /// `trcli specimen edit <ref> [--title <text>]`.
@@ -89,9 +99,14 @@ async fn edit_specimen(session: &mut Session, matches: &ArgMatches) -> Result<Re
 /// it is stopped, the unit is dropped and nothing is added.
 async fn slow(session: &mut Session, matches: &ArgMatches) -> Result<Reply, Problem> {
     let mut checker = Checker::new();
-    let seconds = checker.optional("--seconds", text(matches, "seconds").as_deref(), |n| integer_in_range(n, 1, 600));
+    let seconds = checker.optional("--seconds", text(matches, "seconds").as_deref(), |n| {
+        integer_in_range(n, 1, 600)
+    });
     let title = text(matches, "title");
-    let added = title.as_deref().map(|title| AddSpecimen::new(Some(title))).transpose()?;
+    let added = title
+        .as_deref()
+        .map(|title| AddSpecimen::new(Some(title)))
+        .transpose()?;
     let seconds = checker.finish(|| seconds.flatten().unwrap_or(5))?.command;
 
     let storage = session.storage(Access::Write).await?;
@@ -99,8 +114,13 @@ async fn slow(session: &mut Session, matches: &ArgMatches) -> Result<Reply, Prob
     wait(session, Duration::from_secs(seconds.unsigned_abs())).await;
     let message = match added {
         Some(valid) => {
-            let row = add(&mut unit, &session.stamp(), &session.ids, valid.command).await?.command;
-            format!("Held the workspace for {seconds} s, then added specimen {} \"{}\"", row.handle, row.name)
+            let row = add(&mut unit, &session.stamp(), &session.ids, valid.command)
+                .await?
+                .command;
+            format!(
+                "Held the workspace for {seconds} s, then added specimen {} \"{}\"",
+                row.handle, row.name
+            )
         }
         None => format!("Held the workspace for {seconds} s; nothing was changed"),
     };
@@ -119,7 +139,9 @@ async fn wait(session: &mut Session, length: Duration) {
         // yield keep the runtime turning so that Ctrl-C is seen.
         std::thread::sleep(Duration::from_millis(20));
         tokio::task::yield_now().await;
-        session.progress.advance(started.elapsed().as_millis() as u64 / 100, Some(total));
+        session
+            .progress
+            .advance(started.elapsed().as_millis() as u64 / 100, Some(total));
     }
     session.progress.finish();
 }

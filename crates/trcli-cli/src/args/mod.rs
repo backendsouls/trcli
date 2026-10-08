@@ -1,7 +1,7 @@
 //! The command line, as clap definitions: one module per group of commands.
 //!
 //! These types say what can be typed, with the help text and an example for each command
-//! (FR-055). They check syntax only; every value is checked again, with all problems
+//! (FR-056). They check syntax only; every value is checked again, with all problems
 //! reported together, by the command constructors of the application layer (FR-023).
 //!
 //! The grammar is `trcli [GLOBAL OPTIONS] <noun> <verb> [ARGUMENTS] [OPTIONS]`, as fixed in

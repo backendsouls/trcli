@@ -79,29 +79,50 @@ mod tests {
         let document = parsed(&success(json!({ "handle": "spc-7k3f" }), &[warning]));
         assert_eq!(document["ok"], json!(true));
         assert_eq!(document["data"]["handle"], json!("spc-7k3f"));
-        assert_eq!(document["warnings"][0]["code"], json!("duplicate_suspected"));
+        assert_eq!(
+            document["warnings"][0]["code"],
+            json!("duplicate_suspected")
+        );
         assert_eq!(parsed(&success(json!({}), &[]))["warnings"], json!([]));
     }
 
     #[test]
     fn failure_is_ok_false_and_an_error_with_code_message_and_details() {
-        let invalid = FieldProblem::new("--name", "", Rejection::new("must not be empty", "1 to 200 characters"));
+        let invalid = FieldProblem::new(
+            "--name",
+            "",
+            Rejection::new("must not be empty", "1 to 200 characters"),
+        );
         let document = parsed(&failure(&Problem::validation(vec![invalid])));
         assert_eq!(document["ok"], json!(false));
         assert_eq!(document["error"]["code"], json!("validation_failed"));
         assert_eq!(document["error"]["message"], json!("1 value is invalid"));
         assert_eq!(document["error"]["details"][0]["field"], json!("--name"));
-        assert_eq!(document["error"]["details"][0]["problem"], json!("must not be empty"));
+        assert_eq!(
+            document["error"]["details"][0]["problem"],
+            json!("must not be empty")
+        );
         assert!(document.get("data").is_none());
     }
 
     #[test]
     fn absent_optional_values_are_null_never_omitted() {
-        let warning = parsed(&success(json!({}), &[Warning::new("unusual", "that is unusual")]));
-        assert!(warning["warnings"][0].as_object().expect("an object").contains_key("field"));
+        let warning = parsed(&success(
+            json!({}),
+            &[Warning::new("unusual", "that is unusual")],
+        ));
+        assert!(
+            warning["warnings"][0]
+                .as_object()
+                .expect("an object")
+                .contains_key("field")
+        );
         assert_eq!(warning["warnings"][0]["field"], Value::Null);
 
-        let problem = parsed(&failure(&Problem::new(codes::NO_WORKSPACE, "there is no workspace here")));
+        let problem = parsed(&failure(&Problem::new(
+            codes::NO_WORKSPACE,
+            "there is no workspace here",
+        )));
         let error = problem["error"].as_object().expect("an object");
         assert_eq!(error["details"], Value::Null);
         assert!(error.contains_key("next_step"));
@@ -113,9 +134,15 @@ mod tests {
 
     #[test]
     fn a_secret_value_never_reaches_the_document() {
-        let secret = FieldProblem::for_secret("--passphrase", Rejection::new("is too short", "12 or more characters"));
+        let secret = FieldProblem::for_secret(
+            "--passphrase",
+            Rejection::new("is too short", "12 or more characters"),
+        );
         let document = failure(&Problem::validation(vec![secret]));
-        assert_eq!(parsed(&document)["error"]["details"][0]["value"], Value::Null);
+        assert_eq!(
+            parsed(&document)["error"]["details"][0]["value"],
+            Value::Null
+        );
     }
 
     #[test]

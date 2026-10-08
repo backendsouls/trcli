@@ -30,7 +30,9 @@ fn best_of(sandbox: &Sandbox, arguments: &[&str]) -> Duration {
 /// Puts 10,000 specimens into the workspace directly, as a script loading data would.
 async fn load_ten_thousand(sandbox: &Sandbox) {
     let database = sandbox.work().join(".trcli/trcli.db");
-    let connection = Database::connect(format!("sqlite://{}?mode=rw", database.display())).await.expect("the database");
+    let connection = Database::connect(format!("sqlite://{}?mode=rw", database.display()))
+        .await
+        .expect("the database");
     let mut statements = String::from("BEGIN;");
     for number in 0..10_000_u32 {
         let id = format!("01920000-0000-7000-9000-{number:012x}");
@@ -42,7 +44,10 @@ async fn load_ten_thousand(sandbox: &Sandbox) {
         ));
     }
     statements.push_str("COMMIT;");
-    connection.execute_unprepared(&statements).await.expect("the records are loaded");
+    connection
+        .execute_unprepared(&statements)
+        .await
+        .expect("the records are loaded");
     connection.close().await.expect("closed");
 }
 
@@ -51,9 +56,17 @@ async fn load_ten_thousand(sandbox: &Sandbox) {
 fn a_simple_command_answers_in_under_a_tenth_of_a_second() {
     let sandbox = Sandbox::with_workspace();
     let limit = Duration::from_millis(100);
-    for arguments in [&["--version"][..], &["workspace", "show"][..], &["config", "list"][..]] {
+    for arguments in [
+        &["--version"][..],
+        &["workspace", "show"][..],
+        &["config", "list"][..],
+    ] {
         let took = best_of(&sandbox, arguments);
-        assert!(took < limit, "`trcli {}` took {took:?}", arguments.join(" "));
+        assert!(
+            took < limit,
+            "`trcli {}` took {took:?}",
+            arguments.join(" ")
+        );
     }
 }
 
@@ -63,15 +76,23 @@ async fn listing_and_searching_ten_thousand_records_answers_in_under_two_seconds
     let sandbox = Sandbox::with_workspace();
     load_ten_thousand(&sandbox).await;
     let limit = Duration::from_secs(2);
-    let listed = sandbox.ok(&["specimen", "list", "--limit", "1000", "--output", "json"]).json();
+    let listed = sandbox
+        .ok(&["specimen", "list", "--limit", "1000", "--output", "json"])
+        .json();
     assert_eq!(listed["data"]["total"], 10_000);
     for arguments in [
         &["specimen", "list"][..],
         &["specimen", "list", "--limit", "1000"][..],
-        &["specimen", "list", "--search", "rain", "--sort", "created", "--desc"][..],
+        &[
+            "specimen", "list", "--search", "rain", "--sort", "created", "--desc",
+        ][..],
         &["specimen", "show", "spc-00001f40"][..],
     ] {
         let took = best_of(&sandbox, arguments);
-        assert!(took < limit, "`trcli {}` took {took:?}", arguments.join(" "));
+        assert!(
+            took < limit,
+            "`trcli {}` took {took:?}",
+            arguments.join(" ")
+        );
     }
 }

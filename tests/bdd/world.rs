@@ -72,7 +72,10 @@ impl TrcliWorld {
         let home = tempfile::tempdir().expect("a temporary directory");
         // Canonical, so that paths printed by the tool match paths built here on systems
         // where the temporary directory is reached through a link.
-        let root = home.path().canonicalize().expect("the temporary directory exists");
+        let root = home
+            .path()
+            .canonicalize()
+            .expect("the temporary directory exists");
         let directory = root.join("work");
         std::fs::create_dir_all(&directory).expect("the working directory");
         Self {
@@ -88,12 +91,19 @@ impl TrcliWorld {
 
     /// The scenario's own directory.
     pub fn home(&self) -> PathBuf {
-        self.home.path().canonicalize().expect("the temporary directory exists")
+        self.home
+            .path()
+            .canonicalize()
+            .expect("the temporary directory exists")
     }
 
     /// A path inside the scenario's directory; `~` alone is the directory itself.
     pub fn path(&self, relative: &str) -> PathBuf {
-        if relative == "~" { self.home() } else { self.home().join(relative) }
+        if relative == "~" {
+            self.home()
+        } else {
+            self.home().join(relative)
+        }
     }
 
     /// The `trcli` command, set up so that nothing outside the scenario's directory is
@@ -135,29 +145,47 @@ impl TrcliWorld {
 
     /// The workspace's database, in the directory commands are run in or above it.
     pub fn database(&self) -> Option<PathBuf> {
-        self.directory.ancestors().map(|directory| directory.join(".trcli").join("trcli.db")).find(|path| path.exists())
+        self.directory
+            .ancestors()
+            .map(|directory| directory.join(".trcli").join("trcli.db"))
+            .find(|path| path.exists())
     }
 
     /// The root of the workspace commands are run in.
     pub fn workspace_root(&self) -> Option<PathBuf> {
-        self.directory.ancestors().find(|directory| directory.join(".trcli").is_dir()).map(Path::to_path_buf)
+        self.directory
+            .ancestors()
+            .find(|directory| directory.join(".trcli").is_dir())
+            .map(Path::to_path_buf)
     }
 
     /// Opens the workspace's database directly, as something outside the tool would.
     pub async fn connect(&self, writable: bool) -> Option<DatabaseConnection> {
         let database = self.database()?;
         let mode = if writable { "rw" } else { "ro" };
-        Database::connect(format!("sqlite://{}?mode={mode}", database.display())).await.ok()
+        Database::connect(format!("sqlite://{}?mode={mode}", database.display()))
+            .await
+            .ok()
     }
 
     /// Whether another process holds the workspace for writing right now.
     async fn is_held(&self) -> bool {
-        let Some(database) = self.database() else { return false };
-        let mut options = sea_orm::ConnectOptions::new(format!("sqlite://{}?mode=rw", database.display()));
+        let Some(database) = self.database() else {
+            return false;
+        };
+        let mut options =
+            sea_orm::ConnectOptions::new(format!("sqlite://{}?mode=rw", database.display()));
         // Asked without waiting, on one connection, so that the answer is about this moment.
-        options.max_connections(1).map_sqlx_sqlite_opts(|sqlite| sqlite.busy_timeout(std::time::Duration::ZERO));
-        let Ok(connection) = Database::connect(options).await else { return false };
-        let held = connection.execute_unprepared("BEGIN IMMEDIATE").await.is_err();
+        options
+            .max_connections(1)
+            .map_sqlx_sqlite_opts(|sqlite| sqlite.busy_timeout(std::time::Duration::ZERO));
+        let Ok(connection) = Database::connect(options).await else {
+            return false;
+        };
+        let held = connection
+            .execute_unprepared("BEGIN IMMEDIATE")
+            .await
+            .is_err();
         if !held {
             let _ = connection.execute_unprepared("ROLLBACK").await;
         }
@@ -175,7 +203,10 @@ impl TrcliWorld {
         let started = std::time::Instant::now();
         let mut seen = 0;
         while seen < 4 {
-            assert!(started.elapsed() < std::time::Duration::from_secs(20), "no command took the workspace");
+            assert!(
+                started.elapsed() < std::time::Duration::from_secs(20),
+                "no command took the workspace"
+            );
             seen = if self.is_held().await { seen + 1 } else { 0 };
             std::thread::sleep(std::time::Duration::from_millis(75));
         }
@@ -184,39 +215,77 @@ impl TrcliWorld {
     /// Runs one statement directly against the workspace's database.
     pub async fn execute(&self, sql: &str) {
         let connection = self.connect(true).await.expect("a workspace database");
-        connection.execute_unprepared(sql).await.expect("the statement runs");
+        connection
+            .execute_unprepared(sql)
+            .await
+            .expect("the statement runs");
         connection.close().await.expect("the connection closes");
     }
 
     /// The rows of one table as text, in a stable order.
     async fn rows(connection: &DatabaseConnection, table: &str) -> Vec<String> {
         let query = |sql: String| Statement::from_string(DbBackend::Sqlite, sql);
-        let columns = connection.query_all_raw(query(format!("PRAGMA table_info({table})"))).await.unwrap_or_default();
-        let quoted: Vec<String> =
-            columns.iter().filter_map(|row| row.try_get_by_index::<String>(1).ok()).map(|name| format!("quote({name})")).collect();
+        let columns = connection
+            .query_all_raw(query(format!("PRAGMA table_info({table})")))
+            .await
+            .unwrap_or_default();
+        let quoted: Vec<String> = columns
+            .iter()
+            .filter_map(|row| row.try_get_by_index::<String>(1).ok())
+            .map(|name| format!("quote({name})"))
+            .collect();
         if quoted.is_empty() {
             return Vec::new();
         }
-        let select = format!("SELECT {} FROM {table} ORDER BY rowid", quoted.join(" || '|' || "));
-        let rows = connection.query_all_raw(query(select)).await.unwrap_or_default();
-        rows.iter().filter_map(|row| row.try_get_by_index::<String>(0).ok()).map(|row| format!("{table}: {row}")).collect()
+        let select = format!(
+            "SELECT {} FROM {table} ORDER BY rowid",
+            quoted.join(" || '|' || ")
+        );
+        let rows = connection
+            .query_all_raw(query(select))
+            .await
+            .unwrap_or_default();
+        rows.iter()
+            .filter_map(|row| row.try_get_by_index::<String>(0).ok())
+            .map(|row| format!("{table}: {row}"))
+            .collect()
     }
 
     /// What the workspace holds now. Local tables (telemetry) are left out: every command
     /// adds to them, and they are not part of what a command "changes".
     pub async fn snapshot(&self) -> Snapshot {
-        let Some(root) = self.workspace_root() else { return Snapshot::default() };
+        let Some(root) = self.workspace_root() else {
+            return Snapshot::default();
+        };
         let settings = std::fs::read(root.join(".trcli").join("config.toml")).unwrap_or_default();
         let Some(connection) = self.connect(false).await else {
-            return Snapshot { exists: true, settings, ..Snapshot::default() };
+            return Snapshot {
+                exists: true,
+                settings,
+                ..Snapshot::default()
+            };
         };
         let mut rows = Vec::new();
-        for table in ["workspace", "record", "tag", "tagging", "note", "link", "specimen", "sample_note"] {
+        for table in [
+            "workspace",
+            "record",
+            "tag",
+            "tagging",
+            "note",
+            "link",
+            "specimen",
+            "sample_note",
+        ] {
             rows.extend(Self::rows(&connection, table).await);
         }
         let audit = Self::rows(&connection, "audit_entry").await;
         let _ = connection.close().await;
-        Snapshot { exists: true, audit_entries: audit.len(), rows: rows.into_iter().chain(audit).collect(), settings }
+        Snapshot {
+            exists: true,
+            audit_entries: audit.len(),
+            rows: rows.into_iter().chain(audit).collect(),
+            settings,
+        }
     }
 
     /// Replaces `<name>` with the short name remembered under that name, `<name:n>` with
@@ -225,11 +294,15 @@ impl TrcliWorld {
     pub fn expand(&self, text: &str) -> String {
         let mut expanded = text.replace("{home}", &self.home().display().to_string());
         // What a feature file cannot hold comfortably: a control character, and very long text.
-        expanded = expanded.replace("{bell}", "\u{7}").replace("{long title}", &"t".repeat(501));
+        expanded = expanded
+            .replace("{bell}", "\u{7}")
+            .replace("{long title}", &"t".repeat(501));
         for (name, handle) in &self.handles {
             // `{name}` is the spelling for scenario outlines, where `<…>` already means a
             // column of the examples table.
-            expanded = expanded.replace(&format!("<{name}>"), handle).replace(&format!("{{{name}}}"), handle);
+            expanded = expanded
+                .replace(&format!("<{name}>"), handle)
+                .replace(&format!("{{{name}}}"), handle);
             for length in 1..=handle.len() {
                 expanded = expanded.replace(&format!("<{name}:{length}>"), &handle[..length]);
             }

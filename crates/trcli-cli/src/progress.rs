@@ -32,7 +32,13 @@ pub struct TerminalProgress<W: Write> {
 impl<W: Write> TerminalProgress<W> {
     /// An indication on `out`, drawn only when `enabled`.
     pub fn new(out: W, enabled: bool, symbols: SymbolSet) -> Self {
-        Self { out, enabled, symbols, work: None, frames: 0 }
+        Self {
+            out,
+            enabled,
+            symbols,
+            work: None,
+            frames: 0,
+        }
     }
 
     /// Draws the indication for work that has lasted `elapsed`.
@@ -69,7 +75,10 @@ impl<W: Write> Progress for TerminalProgress<W> {
     }
 
     fn advance(&mut self, done: u64, total: Option<u64>) {
-        let elapsed = self.work.as_ref().map_or(Duration::ZERO, |(_, started)| started.elapsed());
+        let elapsed = self
+            .work
+            .as_ref()
+            .map_or(Duration::ZERO, |(_, started)| started.elapsed());
         self.draw(elapsed, done, total);
     }
 
@@ -111,7 +120,10 @@ mod tests {
         progress.draw(DELAY - Duration::from_millis(1), 1, Some(100));
         assert!(progress.out.is_empty());
         progress.advance(1, Some(100));
-        assert!(progress.out.is_empty(), "work that has just started draws nothing");
+        assert!(
+            progress.out.is_empty(),
+            "work that has just started draws nothing"
+        );
     }
 
     #[test]
@@ -120,7 +132,10 @@ mod tests {
         progress.start("Verifying");
         progress.draw(DELAY, 10, Some(100));
         progress.draw(DELAY, 20, None);
-        assert_eq!(String::from_utf8_lossy(&progress.out), "\r| Verifying 10/100\r/ Verifying 20");
+        assert_eq!(
+            String::from_utf8_lossy(&progress.out),
+            "\r| Verifying 10/100\r/ Verifying 20"
+        );
     }
 
     #[test]
@@ -134,6 +149,9 @@ mod tests {
         let mut quick = super::TerminalProgress::new(Vec::new(), true, SymbolSet::ASCII);
         quick.start("Quick work");
         quick.finish();
-        assert!(quick.out.is_empty(), "work that drew nothing erases nothing");
+        assert!(
+            quick.out.is_empty(),
+            "work that drew nothing erases nothing"
+        );
     }
 }

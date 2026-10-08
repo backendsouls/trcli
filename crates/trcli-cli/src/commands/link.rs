@@ -25,8 +25,16 @@ pub async fn run(session: &mut Session, command: &LinkCommand) -> Result<Reply, 
 }
 
 /// `trcli link add|rm <ref> <ref> [--relation <text>]`.
-async fn change(session: &mut Session, arguments: &LinkArgs, remove: bool) -> Result<Reply, Problem> {
-    let valid = Link::new(&arguments.one, &arguments.other, arguments.relation.as_deref())?;
+async fn change(
+    session: &mut Session,
+    arguments: &LinkArgs,
+    remove: bool,
+) -> Result<Reply, Problem> {
+    let valid = Link::new(
+        &arguments.one,
+        &arguments.other,
+        arguments.relation.as_deref(),
+    )?;
     let storage = session.storage(Access::Write).await?;
     let mut unit = storage.begin().await?;
     let stamp = session.stamp();
@@ -44,5 +52,7 @@ pub async fn tags(session: &mut Session, command: &TagCommand) -> Result<Reply, 
     let TagCommand::List(arguments) = command;
     let storage = session.storage(Access::Read).await?;
     let unit = storage.read().await?;
-    Ok(Reply::new(list_tags(&unit, &session.registries.kinds, arguments.kind.as_deref()).await?))
+    Ok(Reply::new(
+        list_tags(&unit, &session.registries.kinds, arguments.kind.as_deref()).await?,
+    ))
 }

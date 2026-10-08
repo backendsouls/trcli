@@ -25,7 +25,9 @@ Guide: docs/usage/audit.md";
 #[derive(Clone, Debug, Subcommand)]
 pub enum AuditCommand {
     /// List the entries that match every filter given, newest first
-    #[command(after_long_help = "Example:\n  trcli audit list --limit 10\n  trcli audit list --record ref-7k3f --action update")]
+    #[command(
+        after_long_help = "Example:\n  trcli audit list --limit 10\n  trcli audit list --record ref-7k3f --action update"
+    )]
     List(AuditFilters),
 
     /// Check that the trail has not been altered or shortened outside the tool
@@ -33,7 +35,9 @@ pub enum AuditCommand {
     Verify,
 
     /// Write the matching entries to a file as a report
-    #[command(after_long_help = "Example:\n  trcli audit export --to audit.md\n  trcli audit export --from 2026-10-01 --until 2026-10-31 --to october.csv --format csv")]
+    #[command(
+        after_long_help = "Example:\n  trcli audit export --to audit.md\n  trcli audit export --from 2026-10-01 --until 2026-10-31 --to october.csv --format csv"
+    )]
     Export(ExportArgs),
 }
 

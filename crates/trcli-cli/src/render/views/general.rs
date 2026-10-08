@@ -38,6 +38,9 @@ pub struct Verified {
 impl Render for Verified {
     fn render(&self, out: &mut Human) {
         let check = out.symbols.check;
-        out.success(&format!("{check} The audit trail is intact: {} entries verified.", self.entries));
+        out.success(&format!(
+            "{check} The audit trail is intact: {} entries verified.",
+            self.entries
+        ));
     }
 }

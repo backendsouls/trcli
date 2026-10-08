@@ -1,5 +1,5 @@
 //! `trcli` with no arguments: the short help, and — in a workspace with nothing in it
-//! yet — the first things to do (FR-057, FR-060).
+//! yet — the first things to do (FR-055, FR-061).
 
 use trcli_application::outcome::Problem;
 use trcli_application::ports::records::RecordIndex;
@@ -39,7 +39,10 @@ pub async fn run(session: &mut Session) -> Result<Reply, Problem> {
     } else {
         // A workspace that cannot be opened is reported by the commands that need it;
         // here it only means there are no first steps to suggest.
-        workspace_is_empty(session).await.unwrap_or(false).then_some(FIRST_STEPS)
+        workspace_is_empty(session)
+            .await
+            .unwrap_or(false)
+            .then_some(FIRST_STEPS)
     };
     if let Some(hint) = hint {
         text.push('\n');

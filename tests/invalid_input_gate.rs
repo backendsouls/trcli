@@ -19,13 +19,21 @@ fn rejected_command_lines() -> Vec<Vec<String>> {
         .into_iter()
         .filter(|scenario| scenario.tags.iter().any(|tag| tag == "invalid"))
         .flat_map(|scenario| scenario.commands)
-        .map(|line| line.split_whitespace().skip(1).map(|word| word.trim_matches('\'').to_owned()).collect())
+        .map(|line| {
+            line.split_whitespace()
+                .skip(1)
+                .map(|word| word.trim_matches('\'').to_owned())
+                .collect()
+        })
         .collect()
 }
 
 /// Every command that can be run (one with no sub-commands), with the words that reach it.
 fn runnable(command: &Command, path: &[String]) -> Vec<(Vec<String>, Command)> {
-    let inner: Vec<&Command> = command.get_subcommands().filter(|inner| inner.get_name() != "help").collect();
+    let inner: Vec<&Command> = command
+        .get_subcommands()
+        .filter(|inner| inner.get_name() != "help")
+        .collect();
     if inner.is_empty() {
         return vec![(path.to_vec(), command.clone())];
     }
@@ -56,7 +64,11 @@ fn runs(line: &[String], path: &[String]) -> bool {
             words.push(word);
         }
     }
-    words.len() >= path.len() && words.iter().zip(path).all(|(word, expected)| *word == expected)
+    words.len() >= path.len()
+        && words
+            .iter()
+            .zip(path)
+            .all(|(word, expected)| *word == expected)
 }
 
 /// The long names of the options of a command that take a value.
@@ -73,27 +85,58 @@ fn valued_options(command: &Command) -> Vec<String> {
 #[test]
 fn every_command_and_every_valued_option_has_a_rejection_scenario() {
     let lines = rejected_command_lines();
-    assert!(lines.len() > 50, "the feature files hold the rejection scenarios this test reads");
+    assert!(
+        lines.len() > 50,
+        "the feature files hold the rejection scenarios this test reads"
+    );
     let mut missing = Vec::new();
     for (path, command) in runnable(&trcli_cli::cli::command(), &[]) {
         let of_command: Vec<&Vec<String>> = lines.iter().filter(|line| runs(line, &path)).collect();
-        let takes_input = command.get_arguments().any(|argument| argument.is_positional()) || !valued_options(&command).is_empty();
+        let takes_input = command
+            .get_arguments()
+            .any(|argument| argument.is_positional())
+            || !valued_options(&command).is_empty();
         if takes_input && of_command.is_empty() {
-            missing.push(format!("trcli {}: no rejection scenario at all", path.join(" ")));
+            missing.push(format!(
+                "trcli {}: no rejection scenario at all",
+                path.join(" ")
+            ));
         }
         for option in valued_options(&command) {
             if !of_command.iter().any(|line| line.contains(&option)) {
-                missing.push(format!("trcli {}: no rejection scenario gives {option}", path.join(" ")));
+                missing.push(format!(
+                    "trcli {}: no rejection scenario gives {option}",
+                    path.join(" ")
+                ));
             }
         }
     }
-    assert!(missing.is_empty(), "inputs with no scenario tagged @invalid:\n{}", missing.join("\n"));
+    assert!(
+        missing.is_empty(),
+        "inputs with no scenario tagged @invalid:\n{}",
+        missing.join("\n")
+    );
 }
 
 #[test]
 fn the_walk_sees_the_commands_it_is_meant_to_check() {
-    let commands: Vec<String> = runnable(&trcli_cli::cli::command(), &[]).into_iter().map(|(path, _)| path.join(" ")).collect();
-    for expected in ["init", "workspace edit", "config set", "link add", "audit list", "audit export", "specimen list", "sample-note add"] {
-        assert!(commands.contains(&expected.to_owned()), "`{expected}` is not in {commands:?}");
+    let commands: Vec<String> = runnable(&trcli_cli::cli::command(), &[])
+        .into_iter()
+        .map(|(path, _)| path.join(" "))
+        .collect();
+    for expected in [
+        "init",
+        "workspace edit",
+        "config set",
+        "link add",
+        "audit list",
+        "audit export",
+        "specimen list",
+        "sample-note add",
+    ] {
+        assert!(
+            commands.contains(&expected.to_owned()),
+            "`{expected}` is not in {commands:?}"
+        );
     }
 }

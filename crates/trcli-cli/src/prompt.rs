@@ -68,7 +68,10 @@ impl Prompter for TerminalPrompter {
                 // Reading blocks, so it is done off the runtime's thread: Ctrl-C can then
                 // still be noticed while the question is open.
                 let question = question.to_owned();
-                let answer = tokio::task::spawn_blocking(move || ask_at_terminal(question)).await.ok().flatten();
+                let answer = tokio::task::spawn_blocking(move || ask_at_terminal(question))
+                    .await
+                    .ok()
+                    .flatten();
                 Self::interpret(answer.as_deref())
             }
         }
@@ -85,16 +88,27 @@ mod tests {
 
     /// Runs a future on a small runtime.
     fn block_on<F: std::future::Future>(future: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread().build().expect("a runtime").block_on(future)
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("a runtime")
+            .block_on(future)
     }
 
     #[test]
     fn at_a_terminal_anything_but_yes_is_no() {
         for yes in ["y", "Y", "yes", " YES \n"] {
-            assert_eq!(TerminalPrompter::interpret(Some(yes)), Confirmation::Yes, "{yes:?}");
+            assert_eq!(
+                TerminalPrompter::interpret(Some(yes)),
+                Confirmation::Yes,
+                "{yes:?}"
+            );
         }
         for no in ["", "\n", "n", "no", "yep", "sure", "1"] {
-            assert_eq!(TerminalPrompter::interpret(Some(no)), Confirmation::No, "{no:?}");
+            assert_eq!(
+                TerminalPrompter::interpret(Some(no)),
+                Confirmation::No,
+                "{no:?}"
+            );
         }
         assert_eq!(TerminalPrompter::interpret(None), Confirmation::No);
     }
@@ -110,15 +124,30 @@ mod tests {
     fn refuse_answers_at_once_without_reading_input() {
         let mut without_terminal = TerminalPrompter::choose(false, false, false);
         let mut no_input = TerminalPrompter::choose(false, true, true);
-        assert_eq!((without_terminal, no_input), (TerminalPrompter::Refuse, TerminalPrompter::Refuse));
+        assert_eq!(
+            (without_terminal, no_input),
+            (TerminalPrompter::Refuse, TerminalPrompter::Refuse)
+        );
         // If either read standard input, this test would hang.
-        assert_eq!(block_on(without_terminal.confirm("Delete?")), Confirmation::CannotAsk);
-        assert_eq!(block_on(no_input.confirm("Delete?")), Confirmation::CannotAsk);
+        assert_eq!(
+            block_on(without_terminal.confirm("Delete?")),
+            Confirmation::CannotAsk
+        );
+        assert_eq!(
+            block_on(no_input.confirm("Delete?")),
+            Confirmation::CannotAsk
+        );
     }
 
     #[test]
     fn a_terminal_without_flags_is_asked_and_yes_beforehand_wins_over_no_input() {
-        assert_eq!(TerminalPrompter::choose(false, false, true), TerminalPrompter::Ask);
-        assert_eq!(TerminalPrompter::choose(true, true, false), TerminalPrompter::AssumeYes);
+        assert_eq!(
+            TerminalPrompter::choose(false, false, true),
+            TerminalPrompter::Ask
+        );
+        assert_eq!(
+            TerminalPrompter::choose(true, true, false),
+            TerminalPrompter::AssumeYes
+        );
     }
 }

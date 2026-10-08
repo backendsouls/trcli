@@ -2,7 +2,7 @@
 
 **Plan**: [../plan.md](../plan.md) | **Commands**: [cli-conventions.md](./cli-conventions.md)
 
-## Streams (FR-009, FR-010)
+## Streams (FR-031)
 
 | Stream | Carries |
 |--------|---------|
@@ -72,19 +72,30 @@ tells success from failure. A plain-language line is still written to stderr.
     "code": "validation_failed",
     "message": "2 values are invalid",
     "details": [
-      { "field": "year", "value": "20244", "problem": "must be between 1000 and 2027", "example": "2024" },
-      { "field": "title", "value": "", "problem": "must not be empty", "example": null }
-    ]
+      { "field": "--year", "value": "20244", "problem": "is out of range", "expected": "a whole number from 1000 to 2027", "example": "1000", "choices": [] },
+      { "field": "--title", "value": "", "problem": "must not be empty", "expected": "1 to 500 characters", "example": null, "choices": [] }
+    ],
+    "changed": false,
+    "next_step": null
   }
 }
 ```
+
+- `field` is the value's name as the researcher typed it (`--year`, `<tag>`); `value` is
+  `null` when the value is secret.
+- `details` is `null`, a list of invalid values (for `validation_failed` and
+  `settings_invalid`), or a list of text items (matching short names, dependents,
+  differences found).
+- `changed` says whether anything had been changed when the problem was met; `next_step`
+  names the obvious next step, or is `null` (FR-034).
 
 ### Error codes
 
 | `error.code` | Exit code | When |
 |--------------|-----------|------|
-| `validation_failed` | 2 | One or more values invalid; `details` lists every one (FR-015) |
+| `validation_failed` | 2 | One or more values invalid; `details` lists every one (FR-023) |
 | `usage` | 2 | Malformed command line |
+| `settings_invalid` | 2 | A settings file or session variable holds an unknown key or an invalid value; `details` names the source and the key (FR-043) |
 | `not_found` | 3 | No record matches; `details` may suggest close handles |
 | `ambiguous_reference` | 3 | Prefix matches several; `details` lists them |
 | `no_workspace` | 4 | No workspace found |
@@ -94,26 +105,30 @@ tells success from failure. A plain-language line is still written to stderr.
 | `workspace_damaged` | 4 | The stored data cannot be opened or fails its check; `details` says what and where |
 | `workspace_busy` | 4 | Another command is changing the workspace and did not finish within the wait |
 | `confirmation_required` | 5 | Needs `--yes`; `details` lists what would be affected |
+| `declined` | 5 | The researcher was asked and did not answer yes |
 | `blocked_by_dependents` | 5 | Deletion not allowed; `details` lists dependents |
 | `check_failed` | 6 | Verification or reproducibility differences; `details` lists them |
-| `step_failed` | 7 | Automated step failed; includes step key and exit code |
-| `lookup_unavailable` | 7 | `details.cause`: `no_connection`, `catalogue_unavailable`, `unknown_identifier`, `disabled` (FR-076) |
+| `operation_failed` | 7 | Something outside the tool could not be done: a file that cannot be written, a read-only disk |
+| `step_failed` | 7 | Automated step failed; includes step key and exit code (registered by `specs/004-experiments`) |
+| `lookup_unavailable` | 7 | `details.cause`: `no_connection`, `catalogue_unavailable`, `unknown_identifier`, `disabled` (registered by `specs/005-literature`) |
 | `interrupted` | 130 | Cancelled by the user |
 | `internal` | 1 | Anything else |
 
-## Validation messages (FR-014, constitution principle V)
+## Validation messages (FR-022, constitution principle V)
 
 Each problem states **which value**, **what is wrong**, and **what is expected**, with an
 example when one helps:
 
 ```text
 error: 2 values are invalid
-  --year 20244     must be between 1000 and 2027 (for example: 2024)
-  --title ""       must not be empty
+  --year "20244"  is out of range; expected a whole number from 1000 to 2027 (for example: 1000)
+  --title ""      must not be empty; expected 1 to 500 characters
 Nothing was changed.
 ```
 
-## Confirmations (FR-008)
+A problem with an obvious next step ends with a line `Next: …`.
+
+## Confirmations (FR-017, FR-035)
 
 A destructive command first prints what will be affected, then asks:
 
@@ -129,7 +144,7 @@ Delete? [y/N]
   `--yes`, the command fails with `confirmation_required` and changes nothing.
 - The default answer is always No.
 
-## Import reports (FR-021)
+## Import reports (FR-020; for the features that import)
 
 ```text
 Imported 987 of 1000 entries (11 invalid, 2 duplicates skipped)

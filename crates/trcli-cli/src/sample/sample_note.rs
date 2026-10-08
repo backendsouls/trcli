@@ -4,7 +4,9 @@
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use trcli_application::outcome::Problem;
 use trcli_application::ports::unit_of_work::Storage;
-use trcli_application::sample::sample_note::{AddSampleNote, EditSampleNote, SampleNotes, add, descriptor, edit};
+use trcli_application::sample::sample_note::{
+    AddSampleNote, EditSampleNote, SampleNotes, add, descriptor, edit,
+};
 use trcli_application::workspace::open::Access;
 
 use super::text;
@@ -19,7 +21,12 @@ pub const NOUN: &str = "sample-note";
 /// `trcli sample-note` with its own verbs and the shared ones.
 pub fn command() -> Command {
     let descriptor = descriptor();
-    let flag = |name: &'static str, help: &'static str| Arg::new(name).long(name).action(ArgAction::SetTrue).help(help);
+    let flag = |name: &'static str, help: &'static str| {
+        Arg::new(name)
+            .long(name)
+            .action(ArgAction::SetTrue)
+            .help(help)
+    };
     let own = [
         Command::new("add")
             .about("Add a sample note")
@@ -44,14 +51,20 @@ pub fn command() -> Command {
 }
 
 /// Runs one verb of `trcli sample-note`.
-pub async fn run(session: &mut Session, verb: &str, matches: &ArgMatches) -> Result<Reply, Problem> {
+pub async fn run(
+    session: &mut Session,
+    verb: &str,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     if let Some(shared) = shared_verbs::run(session, &SampleNotes::new(), verb, matches).await {
         return shared;
     }
     match verb {
         "add" => add_note(session, matches).await,
         "edit" => edit_note(session, matches).await,
-        _ => Err(Problem::internal(format!("`sample-note {verb}` is not a command"))),
+        _ => Err(Problem::internal(format!(
+            "`sample-note {verb}` is not a command"
+        ))),
     }
 }
 

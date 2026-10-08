@@ -10,7 +10,10 @@ use tempfile::TempDir;
 
 /// The root of the repository.
 pub fn repository() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().expect("the repository root")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("the repository root")
 }
 
 /// What a command printed and how it ended.
@@ -37,7 +40,8 @@ impl From<Output> for Finished {
 impl Finished {
     /// The JSON document on standard output.
     pub fn json(&self) -> serde_json::Value {
-        serde_json::from_str(&self.stdout).unwrap_or_else(|error| panic!("not JSON ({error}):\n{}", self.stdout))
+        serde_json::from_str(&self.stdout)
+            .unwrap_or_else(|error| panic!("not JSON ({error}):\n{}", self.stdout))
     }
 }
 
@@ -54,7 +58,10 @@ impl Sandbox {
     pub fn new() -> Self {
         let directory = tempfile::tempdir().expect("a temporary directory");
         std::fs::create_dir_all(directory.path().join("work")).expect("the working directory");
-        Self { directory, runs: std::cell::Cell::new(0) }
+        Self {
+            directory,
+            runs: std::cell::Cell::new(0),
+        }
     }
 
     /// A scratch directory holding a workspace named "Lab".
@@ -67,7 +74,10 @@ impl Sandbox {
 
     /// The scratch directory, in the form the tool prints paths in.
     pub fn home(&self) -> PathBuf {
-        self.directory.path().canonicalize().expect("the temporary directory exists")
+        self.directory
+            .path()
+            .canonicalize()
+            .expect("the temporary directory exists")
     }
 
     /// The directory commands are run in.
@@ -104,13 +114,22 @@ impl Sandbox {
 
     /// Runs `trcli` with these arguments.
     pub fn run(&self, arguments: &[&str]) -> Finished {
-        self.command(arguments).output().expect("trcli starts").into()
+        self.command(arguments)
+            .output()
+            .expect("trcli starts")
+            .into()
     }
 
     /// Runs `trcli` and requires it to succeed.
     pub fn ok(&self, arguments: &[&str]) -> Finished {
         let finished = self.run(arguments);
-        assert_eq!(finished.code, 0, "`trcli {}` failed:\n{}", arguments.join(" "), finished.stderr);
+        assert_eq!(
+            finished.code,
+            0,
+            "`trcli {}` failed:\n{}",
+            arguments.join(" "),
+            finished.stderr
+        );
         finished
     }
 }
@@ -118,12 +137,18 @@ impl Sandbox {
 /// Every file under a directory with one of the given extensions, recursively.
 pub fn files_under(directory: &Path, extensions: &[&str]) -> Vec<PathBuf> {
     let mut found = Vec::new();
-    let Ok(entries) = std::fs::read_dir(directory) else { return found };
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return found;
+    };
     for entry in entries.filter_map(Result::ok) {
         let path = entry.path();
         if path.is_dir() {
             found.extend(files_under(&path, extensions));
-        } else if path.extension().and_then(|extension| extension.to_str()).is_some_and(|e| extensions.contains(&e)) {
+        } else if path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|e| extensions.contains(&e))
+        {
             found.push(path);
         }
     }
@@ -154,9 +179,15 @@ pub fn scenarios() -> Vec<Scenario> {
         let mut pending_tags: Vec<String> = Vec::new();
         for line in text.lines().map(str::trim) {
             if line.starts_with('@') {
-                pending_tags.extend(line.split_whitespace().map(|tag| tag.trim_start_matches('@').to_owned()));
+                pending_tags.extend(
+                    line.split_whitespace()
+                        .map(|tag| tag.trim_start_matches('@').to_owned()),
+                );
             } else if line.starts_with("Scenario") {
-                scenarios.push(Scenario { tags: std::mem::take(&mut pending_tags), commands: Vec::new() });
+                scenarios.push(Scenario {
+                    tags: std::mem::take(&mut pending_tags),
+                    commands: Vec::new(),
+                });
             } else if line.starts_with("Feature") || line.starts_with("Background") {
                 pending_tags.clear();
             } else if let Some(scenario) = scenarios.last_mut() {
@@ -169,5 +200,8 @@ pub fn scenarios() -> Vec<Scenario> {
 
 /// The `trcli …` command lines quoted in a step.
 fn commands_in(step: &str) -> Vec<String> {
-    step.split('"').filter(|part| part.starts_with("trcli")).map(str::to_owned).collect()
+    step.split('"')
+        .filter(|part| part.starts_with("trcli"))
+        .map(str::to_owned)
+        .collect()
 }

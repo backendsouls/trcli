@@ -15,18 +15,25 @@ use crate::output::Reply;
 
 /// Adds the sample kinds' nouns to the command line.
 pub fn extend(root: Command) -> Command {
-    root.subcommand(specimen::command()).subcommand(sample_note::command())
+    root.subcommand(specimen::command())
+        .subcommand(sample_note::command())
 }
 
 /// Runs a command of one of the sample kinds.
-pub async fn run(session: &mut Session, noun: &str, matches: &ArgMatches) -> Result<Reply, Problem> {
+pub async fn run(
+    session: &mut Session,
+    noun: &str,
+    matches: &ArgMatches,
+) -> Result<Reply, Problem> {
     let Some((verb, arguments)) = matches.subcommand() else {
         return Err(Problem::internal(format!("`{noun}` needs a verb")));
     };
     match noun {
         specimen::NOUN => specimen::run(session, verb, arguments).await,
         sample_note::NOUN => sample_note::run(session, verb, arguments).await,
-        _ => Err(Problem::internal(format!("no feature of this build owns the command `{noun}`"))),
+        _ => Err(Problem::internal(format!(
+            "no feature of this build owns the command `{noun}`"
+        ))),
     }
 }
 

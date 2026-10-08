@@ -1,5 +1,5 @@
 //! Listing the records of a kind: filter by tag, search, sort, and limit — the same way
-//! for every kind (FR-014, FR-037).
+//! for every kind (FR-013, FR-037).
 
 use serde::Serialize;
 use trcli_domain::shared::text::{SearchKey, TagName};

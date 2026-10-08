@@ -22,9 +22,13 @@ Usage guides with worked examples are in docs/usage/.";
 const ABOUT: &str = "TRCLI, The Research CLI: keep the records of your research in one workspace.";
 
 /// The version line: the tool's version and the workspace format it reads and writes
-/// (FR-061).
+/// (FR-059).
 pub fn version() -> String {
-    format!("{} (workspace format {})", env!("CARGO_PKG_VERSION"), FormatVersion::CURRENT)
+    format!(
+        "{} (workspace format {})",
+        env!("CARGO_PKG_VERSION"),
+        FormatVersion::CURRENT
+    )
 }
 
 /// The command tree of this build.
@@ -73,7 +77,10 @@ pub struct Invocation {
 /// The names of the foundation's own top-level commands.
 fn foundation_nouns() -> Vec<String> {
     let commands = Commands::augment_subcommands(Command::new("trcli"));
-    commands.get_subcommands().map(|command| command.get_name().to_owned()).collect()
+    commands
+        .get_subcommands()
+        .map(|command| command.get_name().to_owned())
+        .collect()
 }
 
 /// Reads what clap matched into an [`Invocation`].
@@ -85,9 +92,16 @@ pub fn parse(matches: &ArgMatches) -> Result<Invocation, clap::Error> {
         Some((noun, _)) if foundation_nouns().iter().any(|known| known == noun) => {
             Parsed::Foundation(Commands::from_arg_matches(matches)?)
         }
-        Some((noun, inner)) => Parsed::Kind { noun: noun.to_owned(), matches: inner.clone() },
+        Some((noun, inner)) => Parsed::Kind {
+            noun: noun.to_owned(),
+            matches: inner.clone(),
+        },
     };
-    Ok(Invocation { global, parsed, path })
+    Ok(Invocation {
+        global,
+        parsed,
+        path,
+    })
 }
 
 /// The chain of command names that was matched.
@@ -103,7 +117,10 @@ fn command_path(matches: &ArgMatches) -> Vec<String> {
 
 /// Whether a clap "error" is really a request for help or for the version.
 pub fn is_information(error: &clap::Error) -> bool {
-    matches!(error.kind(), ErrorKind::DisplayHelp | ErrorKind::DisplayVersion)
+    matches!(
+        error.kind(),
+        ErrorKind::DisplayHelp | ErrorKind::DisplayVersion
+    )
 }
 
 /// The `usage` problem for a malformed command line: what is wrong, how the command is
@@ -111,10 +128,19 @@ pub fn is_information(error: &clap::Error) -> bool {
 pub fn usage_problem(error: &clap::Error) -> Problem {
     let text = error.render().to_string();
     let mut lines = text.lines().map(str::trim).filter(|line| !line.is_empty());
-    let message = lines.next().unwrap_or("the command line is not valid").trim_start_matches("error: ").to_owned();
+    let message = lines
+        .next()
+        .unwrap_or("the command line is not valid")
+        .trim_start_matches("error: ")
+        .to_owned();
     // What remains is clap's own explanation: the suggestion ("tip: …") and the usage.
-    let details: Vec<String> = lines.filter(|line| !line.starts_with("For more information")).map(str::to_owned).collect();
-    Problem::new(codes::USAGE, message).with_items(details).with_next_step("run the command with --help to see how it is used")
+    let details: Vec<String> = lines
+        .filter(|line| !line.starts_with("For more information"))
+        .map(str::to_owned)
+        .collect();
+    Problem::new(codes::USAGE, message)
+        .with_items(details)
+        .with_next_step("run the command with --help to see how it is used")
 }
 
 #[cfg(test)]
@@ -145,17 +171,34 @@ mod tests {
     #[test]
     fn global_options_are_accepted_before_and_after_the_command() {
         let before = parsed(&["--output", "json", "workspace", "show"]).expect("valid");
-        let after = parsed(&["workspace", "show", "--output", "json", "-vv", "--yes"]).expect("valid");
+        let after =
+            parsed(&["workspace", "show", "--output", "json", "-vv", "--yes"]).expect("valid");
         assert_eq!(before.global.output.as_deref(), Some("json"));
-        assert_eq!((after.global.output.as_deref(), after.global.verbose, after.global.yes), (Some("json"), 2, true));
-        assert!(matches!(after.parsed, Parsed::Foundation(Commands::Workspace(_))));
+        assert_eq!(
+            (
+                after.global.output.as_deref(),
+                after.global.verbose,
+                after.global.yes
+            ),
+            (Some("json"), 2, true)
+        );
+        assert!(matches!(
+            after.parsed,
+            Parsed::Foundation(Commands::Workspace(_))
+        ));
     }
 
     #[test]
     fn the_path_holds_command_words_only() {
-        let invocation = parsed(&["init", "--name", "A secret project", "somewhere"]).expect("valid");
+        let invocation =
+            parsed(&["init", "--name", "A secret project", "somewhere"]).expect("valid");
         assert_eq!(invocation.path, ["init"]);
-        assert_eq!(parsed(&["config", "set", "output.color", "never"]).expect("valid").path, ["config", "set"]);
+        assert_eq!(
+            parsed(&["config", "set", "output.color", "never"])
+                .expect("valid")
+                .path,
+            ["config", "set"]
+        );
     }
 
     #[test]
@@ -165,26 +208,39 @@ mod tests {
         let problem = usage_problem(&error);
         assert_eq!(problem.outcome().exit_code(), 2);
         assert!(problem.message.contains("worksapce"), "{}", problem.message);
-        assert!(format!("{:?}", problem.details).contains("workspace"), "{:?}", problem.details);
+        assert!(
+            format!("{:?}", problem.details).contains("workspace"),
+            "{:?}",
+            problem.details
+        );
     }
 
     #[test]
     fn a_mistyped_option_is_a_usage_problem_with_a_suggestion() {
         let problem = usage_problem(&parsed(&["init", "--nmae", "x"]).expect_err("unknown option"));
-        assert!(format!("{:?}", problem.details).contains("--name"), "{:?}", problem.details);
+        assert!(
+            format!("{:?}", problem.details).contains("--name"),
+            "{:?}",
+            problem.details
+        );
     }
 
     #[test]
     fn help_and_version_are_information_not_errors() {
         assert!(is_information(&parsed(&["--help"]).expect_err("help")));
-        assert!(is_information(&parsed(&["--version"]).expect_err("version")));
+        assert!(is_information(
+            &parsed(&["--version"]).expect_err("version")
+        ));
         assert!(version().contains("workspace format 1"));
     }
 
     #[test]
     fn audit_has_no_way_to_add_edit_or_remove_an_entry() {
         for verb in ["add", "edit", "rm"] {
-            assert!(parsed(&["audit", verb]).is_err(), "audit {verb} must not exist");
+            assert!(
+                parsed(&["audit", verb]).is_err(),
+                "audit {verb} must not exist"
+            );
         }
     }
 }

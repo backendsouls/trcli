@@ -73,8 +73,10 @@ confirmed in code in Phase 1 of the tasks.
   | `unicode-width` 0.2 | Column alignment with accented and wide characters (FR-029) |
   | `terminal_size` 0.4 | Width to lay out and shorten to (FR-029) |
 
-  `anstream` and `anstyle` (colour that turns itself off when piped, `NO_COLOR`) are
-  **already dependencies of clap**; using them adds nothing.
+  `anstyle` (terminal styles) is **already a dependency of clap**; using it adds nothing.
+  Whether to colour at all is decided by our own ~20 lines in `render/theme.rs`, because
+  the rule in the contract (`--color always` wins over `NO_COLOR`; the setting loses to
+  it) is ours, and a function that is ours can be unit-tested for exactly that rule.
 
 - **Left out on purpose** — each replaced by a small, documented module of our own:
 
@@ -93,14 +95,45 @@ confirmed in code in Phase 1 of the tasks.
   | `chrono`, `regex`, `itertools`, `once_cell` | `time`, hand-written parsers, the standard library | — |
   | `tracing` | `--verbose` writes plain diagnostic lines to stderr through one small `Diagnostics` type | ~30 lines |
 
-- **Development-only**: `cucumber` 0.23, `assert_cmd` 2.2, `trycmd` 1.2, `tempfile` 3.27.
-  Not compiled into `trcli`.
+- **Development-only**: `cucumber` 0.23, `assert_cmd` 2.2, `tempfile` 3.27. Not compiled
+  into `trcli`. `serde_json` is also used by the SQLite adapter (the `changes` of an audit
+  entry are stored as JSON text); it was already a runtime dependency.
+- **Decided during implementation**:
+  - `trycmd` is **not** used. The examples in `docs/usage/*.md` are run by ~120 lines of
+    our own in `tests/usage.rs`, which lets one guide be one continuous session (a
+    workspace created by its first example is used by the next), fixes the clock and the
+    identifiers, and can rewrite the expected output (`TRCLI_BLESS_USAGE=1`).
+  - `anstream` is **not** used (see above).
+  - clap's `string` feature is enabled: the shared verbs build their help from a kind's
+    descriptor at start-up, which needs owned text.
+  - `time`'s `local-offset` feature is enabled in the CLI crate only, to show moments in
+    the researcher's local time (FR-038).
 - **The test for adding a crate**: would our own version exceed about 60 lines, or be easy
   to get subtly wrong (Unicode, cryptography, time zones, SQL)? If neither, we write it.
 - **A stated fallback**: if `paths.rs` meets an operating-system edge case it handles badly
   (redirected folders on Windows), `directories` is added then, with the reason recorded.
-- **Spike 1**: confirm SeaORM 2.0's feature names for SQLite with a bundled library, `time`
-  and `uuid` support, and a tokio runtime; confirm it runs on a current-thread runtime.
+- **Spike 1 — done.** SeaORM 2.0.4 runs on a current-thread tokio runtime (`rt`, `macros`)
+  against the SQLite library bundled by sqlx, with
+  `default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio"]`, and
+  `sea-orm-migration` with `["sqlx-sqlite", "runtime-tokio"]` (its default `cli` feature
+  off). What the spike found, kept as a test in
+  `crates/trcli-infra-sqlite/tests/connection.rs`:
+  - Statements are passed by reference in 2.0 (`execute(&statement)`), or with the `_raw`
+    methods by value.
+  - Write-ahead journal, foreign keys, and the busy timeout are set through
+    `ConnectOptions::map_sqlx_sqlite_opts`; immediate-mode transactions through
+    `begin_with_options` with `SqliteTransactionMode::Immediate`.
+  - `DeriveEntityModel` passes the documentation lints as long as the entity modules are
+    not public; they are `pub(crate)`.
+  - `with-time` and `with-uuid` work, and are **not enabled**: identifiers are stored as
+    hyphenated text and moments as whole milliseconds since 1970 in UTC. Both sort
+    correctly as stored and come back exactly as written, which the audit trail's hashes
+    depend on (a moment formatted with a variable number of fractional digits does
+    neither reliably).
+  - A process that exits without closing its connections leaves the write-ahead journal
+    beside the database, and the database file alone is then incomplete. The `Storage`
+    port therefore has an explicit `close`, called at the end of every command, so that
+    between commands a workspace is one database file.
 
 ## 4. Storage: SQLite in a `.trcli` directory
 
@@ -312,7 +345,7 @@ confirmed in code in Phase 1 of the tasks.
   | Unit | Value objects, rules, settings layering, validation, rendering, handlers with fakes | in each crate |
   | Contract | Each port against its fake and its real adapter, same suite | `trcli-infra-*/tests` |
   | Behaviour | Every acceptance scenario of the spec as Gherkin, against the built binary in a temporary directory | `tests/features/**`, `tests/bdd` |
-  | Documentation | Examples in `docs/usage/*.md` | `tests/usage.rs` |
+  | Documentation | Examples in `docs/usage/*.md`, run by our own runner | `tests/usage.rs` |
   | Structure | Layering; every command has help with an example; every command group has a guide | `tests/layering.rs`, `tests/help_examples.rs` |
   | Upgrade | Every earlier format upgrades without loss | `tests/fixtures/formats` |
 
@@ -324,8 +357,13 @@ confirmed in code in Phase 1 of the tasks.
   - **Order in a phase**: scenarios first (red); then inside-out, a failing test before each
     piece; scenarios green last.
 - **Rationale**: The user asked for TDD and for BDD "by testing the CLI itself".
-- **Spike 2**: confirm cucumber 0.23 runs with a harness-less test target on Windows, and
-  measure the suite's time; if it is too slow, scenarios are sharded per feature directory.
+- **Spike 2 — done on Linux; Windows and macOS are confirmed by the first CI run.**
+  cucumber 0.23 runs as a harness-less test target of the CLI crate whose source is at the
+  repository root (`tests/bdd/main.rs`), on a current-thread tokio runtime. Measured on
+  Linux: 110 scenarios (1,298 steps), each step starting the debug binary, in about 33
+  seconds (a few scenarios hold the workspace for two or three seconds on purpose). Scenarios are run **one at a time** (`max_concurrent_scenarios(1)`): steps
+  start processes and wait for them, and the scenarios about two commands at once must not
+  have their timing disturbed by other scenarios. Sharding is not needed yet.
 
 ## 15. Code a human can read
 

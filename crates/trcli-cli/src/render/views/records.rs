@@ -49,7 +49,10 @@ fn link_lines(out: &mut Human, links: &[LinkView]) {
     let link = out.symbols.link;
     for view in links {
         let handle = out.paint(Meaning::Handle, &view.other.handle);
-        out.line(format!("  {link} {handle} \"{}\" ({}, {})", view.other.name, view.relation, view.other.kind));
+        out.line(format!(
+            "  {link} {handle} \"{}\" ({}, {})",
+            view.other.name, view.relation, view.other.kind
+        ));
     }
 }
 
@@ -62,18 +65,36 @@ impl Render for RecordDetail {
         let own: Vec<(String, String)> = self
             .fields
             .iter()
-            .map(|field| (capitalized(field.name), field.value.clone().unwrap_or_else(|| "(none)".to_owned())))
+            .map(|field| {
+                (
+                    capitalized(field.name),
+                    field.value.clone().unwrap_or_else(|| "(none)".to_owned()),
+                )
+            })
             .collect();
-        fields.extend(own.iter().map(|(name, value)| (name.as_str(), value.clone())));
+        fields.extend(
+            own.iter()
+                .map(|(name, value)| (name.as_str(), value.clone())),
+        );
         fields.push(("Created", out.moment_with_zone(self.created_at)));
         fields.push(("Updated", out.moment_with_zone(self.updated_at)));
-        fields.push(("Tags", if self.tags.is_empty() { "(none)".to_owned() } else { self.tags.join(", ") }));
+        fields.push((
+            "Tags",
+            if self.tags.is_empty() {
+                "(none)".to_owned()
+            } else {
+                self.tags.join(", ")
+            },
+        ));
         out.fields(&fields);
         if !self.notes.is_empty() {
             out.heading("Notes");
             for note in &self.notes {
                 let when = out.paint(Meaning::Muted, &out.moment(note.created_at));
-                out.line(format!("  {when}  {}", note.body.replace('\n', "\n                    ")));
+                out.line(format!(
+                    "  {when}  {}",
+                    note.body.replace('\n', "\n                    ")
+                ));
             }
         }
         if !self.links.is_empty() {
@@ -87,19 +108,36 @@ impl Render for RecordDetail {
 fn capitalized(name: &str) -> String {
     let spaced = name.replace('_', " ");
     let mut characters = spaced.chars();
-    characters.next().map_or_else(String::new, |first| first.to_uppercase().chain(characters).collect())
+    characters.next().map_or_else(String::new, |first| {
+        first.to_uppercase().chain(characters).collect()
+    })
 }
 
 impl Render for Tagged {
     fn render(&self, out: &mut Human) {
         let handle = out.paint(Meaning::Handle, &self.handle);
-        let tags = if self.tags.is_empty() { "(none)".to_owned() } else { self.tags.join(", ") };
-        if self.added.is_empty() && self.removed.is_empty() {
-            out.line(format!("Nothing to change: {handle} \"{}\" has tags: {tags}", self.name));
-        } else if !self.added.is_empty() {
-            out.success(&format!("Tagged {handle} \"{}\": {} (now: {tags})", self.name, self.added.join(", ")));
+        let tags = if self.tags.is_empty() {
+            "(none)".to_owned()
         } else {
-            out.success(&format!("Removed from {handle} \"{}\": {} (now: {tags})", self.name, self.removed.join(", ")));
+            self.tags.join(", ")
+        };
+        if self.added.is_empty() && self.removed.is_empty() {
+            out.line(format!(
+                "Nothing to change: {handle} \"{}\" has tags: {tags}",
+                self.name
+            ));
+        } else if !self.added.is_empty() {
+            out.success(&format!(
+                "Tagged {handle} \"{}\": {} (now: {tags})",
+                self.name,
+                self.added.join(", ")
+            ));
+        } else {
+            out.success(&format!(
+                "Removed from {handle} \"{}\": {} (now: {tags})",
+                self.name,
+                self.removed.join(", ")
+            ));
         }
     }
 }
@@ -107,14 +145,21 @@ impl Render for Tagged {
 impl Render for Noted {
     fn render(&self, out: &mut Human) {
         let handle = out.paint(Meaning::Handle, &self.handle);
-        out.success(&format!("Added a note to {handle} \"{}\" ({})", self.name, out.moment(self.created_at)));
+        out.success(&format!(
+            "Added a note to {handle} \"{}\" ({})",
+            self.name,
+            out.moment(self.created_at)
+        ));
     }
 }
 
 impl Render for Linked {
     fn render(&self, out: &mut Human) {
         let verb = if self.removed { "Unlinked" } else { "Linked" };
-        let (from, to) = (out.paint(Meaning::Handle, &self.from.handle), out.paint(Meaning::Handle, &self.to.handle));
+        let (from, to) = (
+            out.paint(Meaning::Handle, &self.from.handle),
+            out.paint(Meaning::Handle, &self.to.handle),
+        );
         let link = out.symbols.link;
         out.success(&format!(
             "{verb} {from} \"{}\" {link} {to} \"{}\" ({})",
@@ -125,17 +170,29 @@ impl Render for Linked {
 
 /// "1 link", "3 links".
 fn counted_links(total: u64) -> String {
-    if total == 1 { "1 link".to_owned() } else { format!("{total} links") }
+    if total == 1 {
+        "1 link".to_owned()
+    } else {
+        format!("{total} links")
+    }
 }
 
 impl Render for LinkList {
     fn render(&self, out: &mut Human) {
         if self.items.is_empty() {
-            out.notice(format!("{} \"{}\" has no links.", self.of.handle, self.of.name));
+            out.notice(format!(
+                "{} \"{}\" has no links.",
+                self.of.handle, self.of.name
+            ));
             return;
         }
         let handle = out.paint(Meaning::Handle, &self.of.handle);
-        out.line(format!("{} of {} {handle} \"{}\":", counted_links(self.total), self.of.kind, self.of.name));
+        out.line(format!(
+            "{} of {} {handle} \"{}\":",
+            counted_links(self.total),
+            self.of.kind,
+            self.of.name
+        ));
         link_lines(out, &self.items);
     }
 }
@@ -146,8 +203,16 @@ impl Render for TagList {
             out.notice("No tags are in use.");
             return;
         }
-        let rows: Vec<Vec<Cell>> =
-            self.items.iter().map(|item| vec![Cell::plain(&item.tag), Cell::plain(item.records.to_string())]).collect();
+        let rows: Vec<Vec<Cell>> = self
+            .items
+            .iter()
+            .map(|item| {
+                vec![
+                    Cell::plain(&item.tag),
+                    Cell::plain(item.records.to_string()),
+                ]
+            })
+            .collect();
         out.table(&["TAG", "RECORDS"], &rows, 0);
     }
 }

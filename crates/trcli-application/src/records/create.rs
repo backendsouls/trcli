@@ -2,8 +2,7 @@
 //! FR-018, FR-046).
 //!
 //! A feature's `add` use case stores its own row and calls [`register`]; its `edit` use
-//! case calls [`rename`] when the record's name changed, or [`touch`] when only other
-//! fields did. That is all a feature writes to give its records a short name, a place in
+//! case calls [`update`], with the new name when the name changed. That is all a feature writes to give its records a short name, a place in
 //! searches, and a history.
 
 use trcli_domain::governance::audit::{AuditAction, AuditDraft, Change, Stamp};

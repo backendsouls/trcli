@@ -26,7 +26,11 @@ fn leaves(value: &Value, found: &mut Vec<String>) {
 /// in the structured form is written `2026-10-08 14:00` there.
 fn as_shown(value: &str) -> String {
     let is_moment = value.len() == 20 && value.ends_with('Z') && value.as_bytes()[10] == b'T';
-    if is_moment { format!("{} {}", &value[..10], &value[11..16]) } else { value.to_owned() }
+    if is_moment {
+        format!("{} {}", &value[..10], &value[11..16])
+    } else {
+        value.to_owned()
+    }
 }
 
 /// Asserts that everything the structured form of a command says is in its other form.
@@ -41,14 +45,25 @@ fn assert_forms_agree(sandbox: &Sandbox, arguments: &[&str]) {
     assert!(!values.is_empty(), "`{}` has no data", arguments.join(" "));
     let shown = format!("{}{}", human.stdout, human.stderr);
     for value in values {
-        assert!(shown.contains(&as_shown(&value)), "`{value}` is in the structured form of `trcli {}` and not in:\n{shown}", arguments.join(" "));
+        assert!(
+            shown.contains(&as_shown(&value)),
+            "`{value}` is in the structured form of `trcli {}` and not in:\n{shown}",
+            arguments.join(" ")
+        );
     }
 }
 
 /// A workspace with two specimens, one tagged, noted, and linked to the other.
 fn workspace() -> (Sandbox, String, String) {
     let sandbox = Sandbox::with_workspace();
-    let handle = |title: &str| sandbox.ok(&["specimen", "add", "--title", title, "--output", "json"]).json()["data"]["handle"].as_str().expect("a handle").to_owned();
+    let handle = |title: &str| {
+        sandbox
+            .ok(&["specimen", "add", "--title", title, "--output", "json"])
+            .json()["data"]["handle"]
+            .as_str()
+            .expect("a handle")
+            .to_owned()
+    };
     let (first, second) = (handle("Soil sample"), handle("Rain water"));
     sandbox.ok(&["specimen", "tag", &first, "field-work"]);
     sandbox.ok(&["specimen", "note", &first, "Dried overnight"]);
@@ -72,13 +87,21 @@ fn listing_records_says_the_same_in_both_forms() {
     for item in items {
         for field in ["handle", "name"] {
             let value = item[field].as_str().expect("text");
-            assert!(human.stdout.contains(value), "`{value}` is not in:\n{}", human.stdout);
+            assert!(
+                human.stdout.contains(value),
+                "`{value}` is not in:\n{}",
+                human.stdout
+            );
         }
         for tag in item["tags"].as_array().expect("tags") {
             assert!(human.stdout.contains(tag.as_str().expect("a tag")));
         }
     }
-    assert_eq!(human.stdout.lines().count(), items.len() + 1, "one line per record, and the heading");
+    assert_eq!(
+        human.stdout.lines().count(),
+        items.len() + 1,
+        "one line per record, and the heading"
+    );
 }
 
 #[test]
@@ -101,6 +124,10 @@ fn a_failure_says_the_same_in_both_forms() {
     leaves(&error["details"], &mut values);
     leaves(&error["next_step"], &mut values);
     for value in values {
-        assert!(human.stderr.contains(&value), "`{value}` is not in:\n{}", human.stderr);
+        assert!(
+            human.stderr.contains(&value),
+            "`{value}` is not in:\n{}",
+            human.stderr
+        );
     }
 }

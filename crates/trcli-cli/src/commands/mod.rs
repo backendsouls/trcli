@@ -44,15 +44,25 @@ async fn foundation(session: &mut Session, command: &Commands) -> Result<Reply, 
 
 /// Runs a command of a record kind, handing it to the feature that owns the kind.
 #[cfg(feature = "sample-kind")]
-async fn kind(session: &mut Session, noun: &str, matches: &clap::ArgMatches) -> Result<Reply, Problem> {
+async fn kind(
+    session: &mut Session,
+    noun: &str,
+    matches: &clap::ArgMatches,
+) -> Result<Reply, Problem> {
     crate::sample::run(session, noun, matches).await
 }
 
 /// This build has no kind of record: clap accepts no such command, so this is never
 /// reached; it exists so that the dispatch above is the same in every build.
 #[cfg(not(feature = "sample-kind"))]
-async fn kind(_session: &mut Session, noun: &str, _matches: &clap::ArgMatches) -> Result<Reply, Problem> {
-    Err(Problem::internal(format!("no feature of this build owns the command `{noun}`")))
+async fn kind(
+    _session: &mut Session,
+    noun: &str,
+    _matches: &clap::ArgMatches,
+) -> Result<Reply, Problem> {
+    Err(Problem::internal(format!(
+        "no feature of this build owns the command `{noun}`"
+    )))
 }
 
 /// Commits a unit of work and stores the new end of the audit trail.

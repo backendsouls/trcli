@@ -13,7 +13,11 @@ use super::width::{display_width, pad};
 
 /// The lines that describe a problem, for standard error.
 pub fn render(problem: &Problem, theme: &Theme) -> String {
-    let mut lines = vec![format!("{} {}", theme.paint(Meaning::Error, "error:"), problem.message)];
+    let mut lines = vec![format!(
+        "{} {}",
+        theme.paint(Meaning::Error, "error:"),
+        problem.message
+    )];
     match &problem.details {
         Details::None => {}
         Details::Fields(fields) => lines.extend(field_lines(fields)),
@@ -23,7 +27,10 @@ pub fn render(problem: &Problem, theme: &Theme) -> String {
         lines.push("Nothing was changed.".to_owned());
     }
     if let Some(next_step) = &problem.next_step {
-        lines.push(format!("{} {next_step}", theme.paint(Meaning::Muted, "Next:")));
+        lines.push(format!(
+            "{} {next_step}",
+            theme.paint(Meaning::Muted, "Next:")
+        ));
     }
     lines.join("\n") + "\n"
 }
@@ -31,8 +38,16 @@ pub fn render(problem: &Problem, theme: &Theme) -> String {
 /// One line per invalid value, with the names and values aligned.
 fn field_lines(fields: &[FieldProblem]) -> Vec<String> {
     let named: Vec<String> = fields.iter().map(name_and_value).collect();
-    let width = named.iter().map(|name| display_width(name)).max().unwrap_or(0);
-    fields.iter().zip(&named).map(|(field, name)| format!("  {}  {}", pad(name, width), explanation(field))).collect()
+    let width = named
+        .iter()
+        .map(|name| display_width(name))
+        .max()
+        .unwrap_or(0);
+    fields
+        .iter()
+        .zip(&named)
+        .map(|(field, name)| format!("  {}  {}", pad(name, width), explanation(field)))
+        .collect()
 }
 
 /// The value's name as typed and, in quotes, the value given. A secret value is not shown.
@@ -58,7 +73,11 @@ fn explanation(field: &FieldProblem) -> String {
 
 /// The line that reports a warning: shown, never a reason to change a value (FR-025).
 pub fn render_warning(warning: &Warning, theme: &Theme) -> String {
-    format!("{} {}", theme.paint(Meaning::Warning, "warning:"), warning.message)
+    format!(
+        "{} {}",
+        theme.paint(Meaning::Warning, "warning:"),
+        warning.message
+    )
 }
 
 #[cfg(test)]
@@ -77,12 +96,14 @@ mod tests {
             FieldProblem::new(
                 "--from",
                 "08/10/2026",
-                Rejection::new("is not a date", "a date written YYYY-MM-DD").with_example("2026-10-08"),
+                Rejection::new("is not a date", "a date written YYYY-MM-DD")
+                    .with_example("2026-10-08"),
             ),
             FieldProblem::new(
                 "--sort",
                 "colour",
-                Rejection::new("is not one of the allowed values", "a field to sort by").with_choices(["title", "created"]),
+                Rejection::new("is not one of the allowed values", "a field to sort by")
+                    .with_choices(["title", "created"]),
             ),
         ])
     }
@@ -104,15 +125,22 @@ mod tests {
 
     #[test]
     fn the_last_line_says_nothing_was_changed() {
-        assert_eq!(render(&invalid(), &Theme::plain()).lines().last(), Some("Nothing was changed."));
-        let changed = Problem::new(codes::OPERATION_FAILED, "the copy could not be removed").after_changes();
+        assert_eq!(
+            render(&invalid(), &Theme::plain()).lines().last(),
+            Some("Nothing was changed.")
+        );
+        let changed =
+            Problem::new(codes::OPERATION_FAILED, "the copy could not be removed").after_changes();
         assert!(!render(&changed, &Theme::plain()).contains("Nothing was changed."));
     }
 
     #[test]
     fn a_next_step_is_named_and_listed_items_are_indented() {
         let problem = Problem::new(codes::AMBIGUOUS_REFERENCE, "`spc` matches 2 records")
-            .with_items(vec!["spc-7k3f \"First\"".into(), "spc-9abc \"Second\"".into()])
+            .with_items(vec![
+                "spc-7k3f \"First\"".into(),
+                "spc-9abc \"Second\"".into(),
+            ])
             .with_next_step("type more of the short name");
         let text = render(&problem, &Theme::plain());
         assert!(text.contains("\n  spc-7k3f \"First\"\n  spc-9abc \"Second\"\n"));
@@ -121,7 +149,10 @@ mod tests {
 
     #[test]
     fn a_secret_value_is_not_shown() {
-        let secret = FieldProblem::for_secret("--passphrase", Rejection::new("is too short", "12 or more characters"));
+        let secret = FieldProblem::for_secret(
+            "--passphrase",
+            Rejection::new("is too short", "12 or more characters"),
+        );
         let text = render(&Problem::validation(vec![secret]), &Theme::plain());
         assert!(text.contains("  --passphrase  is too short; expected 12 or more characters"));
     }
@@ -131,8 +162,11 @@ mod tests {
         let field = FieldProblem::new(
             "--color",
             "sometimes",
-            Rejection::new("is not one of the allowed values", "one of: auto, always, never")
-                .with_choices(["auto", "always", "never"]),
+            Rejection::new(
+                "is not one of the allowed values",
+                "one of: auto, always, never",
+            )
+            .with_choices(["auto", "always", "never"]),
         );
         let text = render(&Problem::validation(vec![field]), &Theme::plain());
         assert_eq!(text.matches("auto, always, never").count(), 1);
@@ -140,7 +174,13 @@ mod tests {
 
     #[test]
     fn a_warning_is_one_line() {
-        let warning = Warning::new("duplicate_suspected", "another reference has the same title");
-        assert_eq!(render_warning(&warning, &Theme::plain()), "warning: another reference has the same title");
+        let warning = Warning::new(
+            "duplicate_suspected",
+            "another reference has the same title",
+        );
+        assert_eq!(
+            render_warning(&warning, &Theme::plain()),
+            "warning: another reference has the same title"
+        );
     }
 }

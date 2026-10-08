@@ -33,7 +33,11 @@ pub struct Reply {
 impl Reply {
     /// A reply that shows a view.
     pub fn new(view: impl View + 'static) -> Self {
-        Self { view: Box::new(view), warnings: Vec::new(), notes: Vec::new() }
+        Self {
+            view: Box::new(view),
+            warnings: Vec::new(),
+            notes: Vec::new(),
+        }
     }
 
     /// Adds warnings.
@@ -84,8 +88,14 @@ impl Presentation {
             json,
             quiet: global.quiet,
             // The structured form is never coloured, whatever was asked.
-            out_theme: Theme::from_settings(settings, !json && context.enabled(std::io::stdout().is_terminal())),
-            err_theme: Theme::from_settings(settings, context.enabled(std::io::stderr().is_terminal())),
+            out_theme: Theme::from_settings(
+                settings,
+                !json && context.enabled(std::io::stdout().is_terminal()),
+            ),
+            err_theme: Theme::from_settings(
+                settings,
+                context.enabled(std::io::stderr().is_terminal()),
+            ),
             symbols: SymbolSet::named(settings.text(OUTPUT_SYMBOLS).unwrap_or("unicode")),
             width: terminal_width(std::env::var("COLUMNS").ok().as_deref(), reported_width()),
             zone,
@@ -133,7 +143,10 @@ impl Presentation {
             return;
         }
         for warning in warnings {
-            write_error(&format!("{}\n", problem::render_warning(warning, &self.err_theme)));
+            write_error(&format!(
+                "{}\n",
+                problem::render_warning(warning, &self.err_theme)
+            ));
         }
     }
 

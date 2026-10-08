@@ -31,19 +31,33 @@ fn every_foundation_command_works_when_nothing_outside_can_be_reached() {
     let sandbox = Sandbox::with_workspace();
     for arguments in COMMANDS {
         let mut command = sandbox.command(arguments);
-        for proxy in ["http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"] {
+        for proxy in [
+            "http_proxy",
+            "https_proxy",
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+        ] {
             // Nothing listens there: a request sent through it could only fail.
             command.env(proxy, "http://127.0.0.1:9");
         }
         let output = command.output().expect("trcli runs");
-        assert!(output.status.success(), "`trcli {}` failed: {}", arguments.join(" "), String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.status.success(),
+            "`trcli {}` failed: {}",
+            arguments.join(" "),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 }
 
 /// Whether this system lets an ordinary user run a process without any network.
 #[cfg(target_os = "linux")]
 fn can_unshare_the_network() -> bool {
-    Command::new("unshare").args(["--user", "--net", "true"]).output().is_ok_and(|output| output.status.success())
+    Command::new("unshare")
+        .args(["--user", "--net", "true"])
+        .output()
+        .is_ok_and(|output| output.status.success())
 }
 
 #[cfg(target_os = "linux")]
@@ -57,7 +71,10 @@ fn every_foundation_command_works_in_a_process_with_no_network() {
     for arguments in COMMANDS {
         let inner = sandbox.command(arguments);
         let mut isolated = Command::new("unshare");
-        isolated.args(["--user", "--net", "--"]).arg(inner.get_program()).args(inner.get_args());
+        isolated
+            .args(["--user", "--net", "--"])
+            .arg(inner.get_program())
+            .args(inner.get_args());
         isolated.current_dir(sandbox.work()).env_clear();
         for (name, value) in inner.get_envs() {
             if let Some(value) = value {
@@ -65,6 +82,11 @@ fn every_foundation_command_works_in_a_process_with_no_network() {
             }
         }
         let output = isolated.output().expect("unshare runs");
-        assert!(output.status.success(), "`trcli {}` failed with no network: {}", arguments.join(" "), String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.status.success(),
+            "`trcli {}` failed with no network: {}",
+            arguments.join(" "),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 }
