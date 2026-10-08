@@ -72,10 +72,7 @@ impl TrcliWorld {
         let home = tempfile::tempdir().expect("a temporary directory");
         // Canonical, so that paths printed by the tool match paths built here on systems
         // where the temporary directory is reached through a link.
-        let root = home
-            .path()
-            .canonicalize()
-            .expect("the temporary directory exists");
+        let root = printed_form(home.path());
         let directory = root.join("work");
         std::fs::create_dir_all(&directory).expect("the working directory");
         Self {
@@ -91,10 +88,7 @@ impl TrcliWorld {
 
     /// The scenario's own directory.
     pub fn home(&self) -> PathBuf {
-        self.home
-            .path()
-            .canonicalize()
-            .expect("the temporary directory exists")
+        printed_form(self.home.path())
     }
 
     /// A path inside the scenario's directory; `~` alone is the directory itself.
@@ -161,9 +155,7 @@ impl TrcliWorld {
 
     /// Opens the workspace's database directly, as something outside the tool would.
     pub async fn connect(&self, writable: bool) -> Option<DatabaseConnection> {
-        let database = self.database()?;
-        let mode = if writable { "rw" } else { "ro" };
-        Database::connect(format!("sqlite://{}?mode={mode}", database.display()))
+        Database::connect(direct(self.database()?, writable, None))
             .await
             .ok()
     }
@@ -173,12 +165,8 @@ impl TrcliWorld {
         let Some(database) = self.database() else {
             return false;
         };
-        let mut options =
-            sea_orm::ConnectOptions::new(format!("sqlite://{}?mode=rw", database.display()));
-        // Asked without waiting, on one connection, so that the answer is about this moment.
-        options
-            .max_connections(1)
-            .map_sqlx_sqlite_opts(|sqlite| sqlite.busy_timeout(std::time::Duration::ZERO));
+        // Asked without waiting, so that the answer is about this moment.
+        let options = direct(database, true, Some(std::time::Duration::ZERO));
         let Ok(connection) = Database::connect(options).await else {
             return false;
         };
@@ -310,6 +298,56 @@ impl TrcliWorld {
         expanded
     }
 }
+
+/// A directory in the form the tool prints it: with links resolved (on some systems the
+/// temporary directory is reached through one), and without the prefix Windows puts on
+/// resolved paths.
+pub fn printed_form(directory: &Path) -> PathBuf {
+    let resolved = directory.canonicalize().expect("the directory exists");
+    let text = resolved.display().to_string();
+    text.strip_prefix(WINDOWS_VERBATIM_PREFIX)
+        .map_or(resolved.clone(), PathBuf::from)
+}
+
+/// What Windows puts in front of a resolved path; the tool never prints it.
+const WINDOWS_VERBATIM_PREFIX: &str = r"\\?\";
+
+/// How a test opens a workspace's database directly: one connection on the file, given as
+/// a path so that no character of it needs escaping on any system.
+fn direct(
+    database: PathBuf,
+    writable: bool,
+    busy_timeout: Option<std::time::Duration>,
+) -> sea_orm::ConnectOptions {
+    let mut options = sea_orm::ConnectOptions::new("sqlite:trcli-test");
+    options
+        .sqlx_logging(false)
+        .max_connections(1)
+        .map_sqlx_sqlite_opts(move |sqlite| {
+            let sqlite = sqlite
+                .filename(&database)
+                .create_if_missing(false)
+                .read_only(!writable);
+            match busy_timeout {
+                Some(timeout) => sqlite.busy_timeout(timeout),
+                None => sqlite,
+            }
+        });
+    options
+}
+
+/// A text with the path separators of this system written as `/`, so that an expected
+/// text written once in a feature file matches what the tool prints on every system.
+pub fn portable(text: &str) -> String {
+    if cfg!(windows) {
+        text.replace(BACKSLASH, "/")
+    } else {
+        text.to_owned()
+    }
+}
+
+/// The path separator of Windows.
+const BACKSLASH: char = 0x5C as char;
 
 /// Splits a command line as a shell would, for the little that scenarios need: words
 /// separated by spaces, and single quotes around a word that holds spaces or is empty.

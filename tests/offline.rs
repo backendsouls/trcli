@@ -9,8 +9,6 @@
 
 mod common;
 
-use std::process::Command;
-
 use common::Sandbox;
 
 /// The commands of the foundation that a researcher uses day to day.
@@ -51,42 +49,49 @@ fn every_foundation_command_works_when_nothing_outside_can_be_reached() {
     }
 }
 
-/// Whether this system lets an ordinary user run a process without any network.
+/// The check that needs a system able to run a process with no network at all.
 #[cfg(target_os = "linux")]
-fn can_unshare_the_network() -> bool {
-    Command::new("unshare")
-        .args(["--user", "--net", "true"])
-        .output()
-        .is_ok_and(|output| output.status.success())
-}
+mod without_any_network {
+    use std::process::Command;
 
-#[cfg(target_os = "linux")]
-#[test]
-fn every_foundation_command_works_in_a_process_with_no_network() {
-    if !can_unshare_the_network() {
-        eprintln!("skipped: this system does not allow an unprivileged network namespace");
-        return;
+    use super::COMMANDS;
+    use super::common::Sandbox;
+
+    /// Whether this system lets an ordinary user run a process without any network.
+    fn can_unshare_the_network() -> bool {
+        Command::new("unshare")
+            .args(["--user", "--net", "true"])
+            .output()
+            .is_ok_and(|output| output.status.success())
     }
-    let sandbox = Sandbox::with_workspace();
-    for arguments in COMMANDS {
-        let inner = sandbox.command(arguments);
-        let mut isolated = Command::new("unshare");
-        isolated
-            .args(["--user", "--net", "--"])
-            .arg(inner.get_program())
-            .args(inner.get_args());
-        isolated.current_dir(sandbox.work()).env_clear();
-        for (name, value) in inner.get_envs() {
-            if let Some(value) = value {
-                isolated.env(name, value);
-            }
+
+    #[test]
+    fn every_foundation_command_works_in_a_process_with_no_network() {
+        if !can_unshare_the_network() {
+            eprintln!("skipped: this system does not allow an unprivileged network namespace");
+            return;
         }
-        let output = isolated.output().expect("unshare runs");
-        assert!(
-            output.status.success(),
-            "`trcli {}` failed with no network: {}",
-            arguments.join(" "),
-            String::from_utf8_lossy(&output.stderr)
-        );
+        let sandbox = Sandbox::with_workspace();
+        for arguments in COMMANDS {
+            let inner = sandbox.command(arguments);
+            let mut isolated = Command::new("unshare");
+            isolated
+                .args(["--user", "--net", "--"])
+                .arg(inner.get_program())
+                .args(inner.get_args());
+            isolated.current_dir(sandbox.work()).env_clear();
+            for (name, value) in inner.get_envs() {
+                if let Some(value) = value {
+                    isolated.env(name, value);
+                }
+            }
+            let output = isolated.output().expect("unshare runs");
+            assert!(
+                output.status.success(),
+                "`trcli {}` failed with no network: {}",
+                arguments.join(" "),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
     }
 }

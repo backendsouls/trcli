@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use cucumber::{given, then, when};
 
-use crate::world::{TrcliWorld, split};
+use crate::world::{TrcliWorld, portable, split};
 
 /// The arguments of a command line that starts with `trcli`.
 fn arguments(world: &TrcliWorld, line: &str) -> Vec<String> {
@@ -264,9 +264,9 @@ async fn the_exit_code_is(world: &mut TrcliWorld, code: i32) {
 /// Step: `stdout contains {string}`.
 #[then(expr = "stdout contains {string}")]
 async fn stdout_contains(world: &mut TrcliWorld, text: String) {
-    let text = world.expand(&text);
+    let text = portable(&world.expand(&text));
     assert!(
-        world.last.stdout.contains(&text),
+        portable(&world.last.stdout).contains(&text),
         "`{text}` is not in stdout:\n{}",
         world.last.stdout
     );
@@ -275,9 +275,9 @@ async fn stdout_contains(world: &mut TrcliWorld, text: String) {
 /// Step: `stdout does not contain {string}`.
 #[then(expr = "stdout does not contain {string}")]
 async fn stdout_does_not_contain(world: &mut TrcliWorld, text: String) {
-    let text = world.expand(&text);
+    let text = portable(&world.expand(&text));
     assert!(
-        !world.last.stdout.contains(&text),
+        !portable(&world.last.stdout).contains(&text),
         "`{text}` is in stdout:\n{}",
         world.last.stdout
     );
@@ -286,9 +286,9 @@ async fn stdout_does_not_contain(world: &mut TrcliWorld, text: String) {
 /// Step: `stderr contains {string}`.
 #[then(expr = "stderr contains {string}")]
 async fn stderr_contains(world: &mut TrcliWorld, text: String) {
-    let text = world.expand(&text);
+    let text = portable(&world.expand(&text));
     assert!(
-        world.last.stderr.contains(&text),
+        portable(&world.last.stderr).contains(&text),
         "`{text}` is not in stderr:\n{}",
         world.last.stderr
     );
@@ -297,9 +297,9 @@ async fn stderr_contains(world: &mut TrcliWorld, text: String) {
 /// Step: `stderr does not contain {string}`.
 #[then(expr = "stderr does not contain {string}")]
 async fn stderr_does_not_contain(world: &mut TrcliWorld, text: String) {
-    let text = world.expand(&text);
+    let text = portable(&world.expand(&text));
     assert!(
-        !world.last.stderr.contains(&text),
+        !portable(&world.last.stderr).contains(&text),
         "`{text}` is in stderr:\n{}",
         world.last.stderr
     );

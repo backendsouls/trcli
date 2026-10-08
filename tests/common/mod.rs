@@ -10,11 +10,21 @@ use tempfile::TempDir;
 
 /// The root of the repository.
 pub fn repository() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .canonicalize()
-        .expect("the repository root")
+    printed_form(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
 }
+
+/// A directory in the form the tool prints it: with links resolved (on some systems the
+/// temporary directory is reached through one), and without the prefix Windows puts on
+/// resolved paths.
+pub fn printed_form(directory: &Path) -> PathBuf {
+    let resolved = directory.canonicalize().expect("the directory exists");
+    let text = resolved.display().to_string();
+    text.strip_prefix(WINDOWS_VERBATIM_PREFIX)
+        .map_or(resolved.clone(), PathBuf::from)
+}
+
+/// What Windows puts in front of a resolved path; the tool never prints it.
+const WINDOWS_VERBATIM_PREFIX: &str = r"\\?\";
 
 /// What a command printed and how it ended.
 #[derive(Clone, Debug)]
@@ -74,10 +84,7 @@ impl Sandbox {
 
     /// The scratch directory, in the form the tool prints paths in.
     pub fn home(&self) -> PathBuf {
-        self.directory
-            .path()
-            .canonicalize()
-            .expect("the temporary directory exists")
+        printed_form(self.directory.path())
     }
 
     /// The directory commands are run in.

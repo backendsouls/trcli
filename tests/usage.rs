@@ -126,6 +126,12 @@ fn lines_match(expected: &[&str], actual: &[&str]) -> bool {
 /// error, then the exit code when it is not 0.
 fn printed(finished: &Finished, home: &str) -> Vec<String> {
     let text = format!("{}{}", finished.stdout, finished.stderr).replace(home, "[..]");
+    // Guides are written with `/` in paths; on Windows the tool prints the other separator.
+    let text = if cfg!(windows) {
+        text.replace(0x5C as char, "/")
+    } else {
+        text
+    };
     let mut lines: Vec<String> = text
         .lines()
         .map(|line| line.trim_end().to_owned())

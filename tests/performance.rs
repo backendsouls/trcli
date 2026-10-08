@@ -30,9 +30,11 @@ fn best_of(sandbox: &Sandbox, arguments: &[&str]) -> Duration {
 /// Puts 10,000 specimens into the workspace directly, as a script loading data would.
 async fn load_ten_thousand(sandbox: &Sandbox) {
     let database = sandbox.work().join(".trcli/trcli.db");
-    let connection = Database::connect(format!("sqlite://{}?mode=rw", database.display()))
-        .await
-        .expect("the database");
+    let mut options = sea_orm::ConnectOptions::new("sqlite:trcli-test");
+    options
+        .sqlx_logging(false)
+        .map_sqlx_sqlite_opts(move |sqlite| sqlite.filename(&database));
+    let connection = Database::connect(options).await.expect("the database");
     let mut statements = String::from("BEGIN;");
     for number in 0..10_000_u32 {
         let id = format!("01920000-0000-7000-9000-{number:012x}");
