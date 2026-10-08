@@ -22,6 +22,31 @@ cargo run -p trcli-cli -- --help
 cargo run -p trcli-cli --example sample_kinds -- specimen add --title "First"
 ```
 
+## Git hooks
+
+Turn on the repository's hooks once per clone:
+
+```sh
+scripts/install-hooks.sh
+```
+
+From then on, **before every push** every test is run — unit, integration, functional,
+and behaviour — and the push is refused if one fails:
+
+```sh
+cargo test --workspace --no-fail-fast --features trcli-cli/test-clock
+```
+
+| | |
+|---|---|
+| Skip it for one push | `git push --no-verify`, or `TRCLI_SKIP_HOOKS=1 git push` |
+| Turn the hooks off | `scripts/install-hooks.sh --remove` |
+| Where they are | `.githooks/`, under version control |
+
+The hook does nothing on a branch without a Cargo workspace (one that holds only
+specifications), and nothing when a push only deletes branches. CI runs the same tests on
+three systems; the hook is there so that you find out before the push, not after.
+
 ## Every check, and what it protects
 
 Run these before opening a pull request. CI runs the same on Linux, macOS, and Windows.
