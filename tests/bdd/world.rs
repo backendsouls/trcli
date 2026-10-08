@@ -1,0 +1,236 @@
+//! The world of one scenario: a temporary directory, the `trcli` binary, and what the
+//! last command printed.
+
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output, Stdio};
+
+use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+use tempfile::TempDir;
+
+/// The moment every scenario starts at, unless it says otherwise.
+pub const START: &str = "2026-10-08T14:00:00Z";
+
+/// What a command printed and how it ended.
+#[derive(Clone, Debug, Default)]
+pub struct Finished {
+    /// Standard output.
+    pub stdout: String,
+    /// Standard error.
+    pub stderr: String,
+    /// The exit code; -1 when the process was killed by a signal.
+    pub code: i32,
+}
+
+impl From<Output> for Finished {
+    fn from(output: Output) -> Self {
+        Self {
+            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            code: output.status.code().unwrap_or(-1),
+        }
+    }
+}
+
+/// What a workspace holds, as far as "nothing was changed" is concerned.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Snapshot {
+    /// Whether there is a workspace at all.
+    pub exists: bool,
+    /// Every row of every shared table, as text.
+    pub rows: Vec<String>,
+    /// How many audit entries there are.
+    pub audit_entries: usize,
+    /// The bytes of the workspace's settings file.
+    pub settings: Vec<u8>,
+}
+
+/// The world of one scenario.
+#[derive(Debug, cucumber::World)]
+#[world(init = Self::new)]
+pub struct TrcliWorld {
+    /// The scenario's own directory; removed when the scenario ends.
+    home: TempDir,
+    /// Where commands are run, inside `home`.
+    pub directory: PathBuf,
+    /// Variables set for every command of the scenario.
+    pub environment: BTreeMap<String, String>,
+    /// What the last command printed.
+    pub last: Finished,
+    /// The workspace as it was before the last command.
+    pub before: Snapshot,
+    /// How many commands were run; seeds the identifiers so that each command makes
+    /// different ones.
+    runs: u64,
+    /// Short names of records, remembered under a name the scenario chose.
+    pub handles: BTreeMap<String, String>,
+}
+
+impl TrcliWorld {
+    /// A fresh world: an empty directory `work` to stand in, and nothing else.
+    fn new() -> Self {
+        let home = tempfile::tempdir().expect("a temporary directory");
+        // Canonical, so that paths printed by the tool match paths built here on systems
+        // where the temporary directory is reached through a link.
+        let root = home.path().canonicalize().expect("the temporary directory exists");
+        let directory = root.join("work");
+        std::fs::create_dir_all(&directory).expect("the working directory");
+        Self {
+            home,
+            directory,
+            environment: BTreeMap::new(),
+            last: Finished::default(),
+            before: Snapshot::default(),
+            runs: 0,
+            handles: BTreeMap::new(),
+        }
+    }
+
+    /// The scenario's own directory.
+    pub fn home(&self) -> PathBuf {
+        self.home.path().canonicalize().expect("the temporary directory exists")
+    }
+
+    /// A path inside the scenario's directory; `~` alone is the directory itself.
+    pub fn path(&self, relative: &str) -> PathBuf {
+        if relative == "~" { self.home() } else { self.home().join(relative) }
+    }
+
+    /// The `trcli` command, set up so that nothing outside the scenario's directory is
+    /// read or written and so that time and identifiers are fixed.
+    pub fn trcli(&mut self, arguments: &[String]) -> Command {
+        self.runs += 1;
+        let mut command = Command::new(env!("CARGO_BIN_EXE_trcli"));
+        let settings = self.home().join("user-settings");
+        command
+            .args(arguments)
+            .current_dir(&self.directory)
+            .env_clear()
+            // The researcher's own settings live in the scenario's directory on every system.
+            .env("XDG_CONFIG_HOME", &settings)
+            .env("HOME", &settings)
+            .env("APPDATA", &settings)
+            .env("USER", "ana")
+            .env("USERNAME", "ana")
+            .env("TZ", "UTC")
+            .env("TRCLI_TEST_NOW", START)
+            .env("TRCLI_TEST_ID_SEED", self.runs.to_string())
+            .envs(&self.environment)
+            .stdin(Stdio::null());
+        // A few variables some systems need for a process to start at all.
+        for name in ["SystemRoot", "PATH", "TMPDIR", "TEMP", "TMP"] {
+            if let Ok(value) = std::env::var(name) {
+                command.env(name, value);
+            }
+        }
+        command
+    }
+
+    /// Runs `trcli` with these arguments, remembering the workspace as it was before.
+    pub async fn run(&mut self, arguments: &[String]) {
+        self.before = self.snapshot().await;
+        let output = self.trcli(arguments).output().expect("trcli starts");
+        self.last = output.into();
+    }
+
+    /// The workspace's database, in the directory commands are run in or above it.
+    pub fn database(&self) -> Option<PathBuf> {
+        self.directory.ancestors().map(|directory| directory.join(".trcli").join("trcli.db")).find(|path| path.exists())
+    }
+
+    /// The root of the workspace commands are run in.
+    pub fn workspace_root(&self) -> Option<PathBuf> {
+        self.directory.ancestors().find(|directory| directory.join(".trcli").is_dir()).map(Path::to_path_buf)
+    }
+
+    /// Opens the workspace's database directly, as something outside the tool would.
+    pub async fn connect(&self, writable: bool) -> Option<DatabaseConnection> {
+        let database = self.database()?;
+        let mode = if writable { "rw" } else { "ro" };
+        Database::connect(format!("sqlite://{}?mode={mode}", database.display())).await.ok()
+    }
+
+    /// Runs one statement directly against the workspace's database.
+    pub async fn execute(&self, sql: &str) {
+        let connection = self.connect(true).await.expect("a workspace database");
+        connection.execute_unprepared(sql).await.expect("the statement runs");
+        connection.close().await.expect("the connection closes");
+    }
+
+    /// The rows of one table as text, in a stable order.
+    async fn rows(connection: &DatabaseConnection, table: &str) -> Vec<String> {
+        let query = |sql: String| Statement::from_string(DbBackend::Sqlite, sql);
+        let columns = connection.query_all_raw(query(format!("PRAGMA table_info({table})"))).await.unwrap_or_default();
+        let quoted: Vec<String> =
+            columns.iter().filter_map(|row| row.try_get_by_index::<String>(1).ok()).map(|name| format!("quote({name})")).collect();
+        if quoted.is_empty() {
+            return Vec::new();
+        }
+        let select = format!("SELECT {} FROM {table} ORDER BY rowid", quoted.join(" || '|' || "));
+        let rows = connection.query_all_raw(query(select)).await.unwrap_or_default();
+        rows.iter().filter_map(|row| row.try_get_by_index::<String>(0).ok()).map(|row| format!("{table}: {row}")).collect()
+    }
+
+    /// What the workspace holds now. Local tables (telemetry) are left out: every command
+    /// adds to them, and they are not part of what a command "changes".
+    pub async fn snapshot(&self) -> Snapshot {
+        let Some(root) = self.workspace_root() else { return Snapshot::default() };
+        let settings = std::fs::read(root.join(".trcli").join("config.toml")).unwrap_or_default();
+        let Some(connection) = self.connect(false).await else {
+            return Snapshot { exists: true, settings, ..Snapshot::default() };
+        };
+        let mut rows = Vec::new();
+        for table in ["workspace", "record", "tag", "tagging", "note", "link", "specimen", "sample_note"] {
+            rows.extend(Self::rows(&connection, table).await);
+        }
+        let audit = Self::rows(&connection, "audit_entry").await;
+        let _ = connection.close().await;
+        Snapshot { exists: true, audit_entries: audit.len(), rows: rows.into_iter().chain(audit).collect(), settings }
+    }
+
+    /// Replaces `<name>` with the short name remembered under that name, `<name:n>` with
+    /// its first `n` characters, `{home}` with the scenario's directory, `{bell}` with a
+    /// control character, and `{long title}` with 501 characters.
+    pub fn expand(&self, text: &str) -> String {
+        let mut expanded = text.replace("{home}", &self.home().display().to_string());
+        // What a feature file cannot hold comfortably: a control character, and very long text.
+        expanded = expanded.replace("{bell}", "\u{7}").replace("{long title}", &"t".repeat(501));
+        for (name, handle) in &self.handles {
+            expanded = expanded.replace(&format!("<{name}>"), handle);
+            for length in 1..=handle.len() {
+                expanded = expanded.replace(&format!("<{name}:{length}>"), &handle[..length]);
+            }
+        }
+        expanded
+    }
+}
+
+/// Splits a command line as a shell would, for the little that scenarios need: words
+/// separated by spaces, and single quotes around a word that holds spaces or is empty.
+pub fn split(line: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut word = String::new();
+    let (mut quoted, mut started) = (false, false);
+    for character in line.chars() {
+        match character {
+            '\'' => {
+                quoted = !quoted;
+                started = true;
+            }
+            ' ' if !quoted => {
+                if started {
+                    words.push(std::mem::take(&mut word));
+                    started = false;
+                }
+            }
+            other => {
+                word.push(other);
+                started = true;
+            }
+        }
+    }
+    if started {
+        words.push(word);
+    }
+    words
+}

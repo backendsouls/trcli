@@ -13,7 +13,7 @@ use crate::validation::{Checker, Valid, date, integer_in_range, not_before};
 use crate::view::Instant;
 
 /// The filters of `audit list` and `audit export`, unchecked.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AuditInput {
     /// `--kind`.
     pub kind: Option<String>,
@@ -23,15 +23,56 @@ pub struct AuditInput {
     pub action: Option<String>,
     /// `--from`.
     pub from: Option<String>,
-    /// `--to`.
+    /// The last day: `--to`, or `--until` where `--to` means something else.
     pub to: Option<String>,
+    /// The name of the option the last day was given with, for messages.
+    pub to_name: String,
     /// `--limit`.
     pub limit: Option<String>,
 }
 
-/// Checks the filters together. `record` is the record named with `--record`, already
-/// resolved by the caller (resolving needs storage); `default_limit` applies without
-/// `--limit`.
+impl Default for AuditInput {
+    fn default() -> Self {
+        Self { kind: None, actor: None, action: None, from: None, to: None, to_name: "--to".to_owned(), limit: None }
+    }
+}
+
+/// Checks the filters with the caller's checker, so that their problems are reported
+/// together with those of the command's other values. `record` is the record named with
+/// `--record`, already resolved by the caller (resolving needs storage); `default_limit`
+/// applies without `--limit`. `None` means a problem was recorded.
+pub fn check_filters(
+    checker: &mut Checker,
+    input: &AuditInput,
+    record: Option<RecordId>,
+    kinds: &KindRegistry,
+    default_limit: u32,
+) -> Option<AuditFilter> {
+    let kind = checker.optional("--kind", input.kind.as_deref(), |kind| known_kind(kind, kinds));
+    let actor = checker.optional("--actor", input.actor.as_deref(), non_empty);
+    let action = checker.optional("--action", input.action.as_deref(), known_action);
+    let from = checker.optional("--from", input.from.as_deref(), date);
+    let to = checker.optional(&input.to_name, input.to.as_deref(), date);
+    let limit = checker.optional("--limit", input.limit.as_deref(), |limit| integer_in_range(limit, 1, 1000));
+    // A rule between two values, each valid alone (FR-027).
+    if let (Some(Some(from)), Some(Some(to)), Some(raw)) = (from, to, input.to.as_deref())
+        && let Err(rejection) = not_before(from, to)
+    {
+        checker.reject(&input.to_name, raw, rejection);
+        return None;
+    }
+    Some(AuditFilter {
+        record,
+        kind: kind?,
+        actor: actor?,
+        action: action?,
+        from: from?,
+        to: to?,
+        limit: limit?.map_or(default_limit, |limit| limit as u32),
+    })
+}
+
+/// Checks the filters on their own.
 pub fn filter(
     input: &AuditInput,
     record: Option<RecordId>,
@@ -39,31 +80,8 @@ pub fn filter(
     default_limit: u32,
 ) -> Result<Valid<AuditFilter>, Problem> {
     let mut checker = Checker::new();
-    let kind = checker.optional("--kind", input.kind.as_deref(), |kind| {
-        known_kind(kind, kinds)
-    });
-    let actor = checker.optional("--actor", input.actor.as_deref(), non_empty);
-    let action = checker.optional("--action", input.action.as_deref(), known_action);
-    let from = checker.optional("--from", input.from.as_deref(), date);
-    let to = checker.optional("--to", input.to.as_deref(), date);
-    let limit = checker.optional("--limit", input.limit.as_deref(), |limit| {
-        integer_in_range(limit, 1, 1000)
-    });
-    // A rule between two values, each valid alone (FR-027).
-    if let (Some(Some(from)), Some(Some(to)), Some(raw)) = (from, to, input.to.as_deref())
-        && let Err(rejection) = not_before(from, to)
-    {
-        checker.reject("--to", raw, rejection);
-    }
-    checker.finish(|| AuditFilter {
-        record,
-        kind: kind.flatten(),
-        actor: actor.flatten(),
-        action: action.flatten(),
-        from: from.flatten(),
-        to: to.flatten(),
-        limit: limit.flatten().map_or(default_limit, |limit| limit as u32),
-    })
+    let filter = check_filters(&mut checker, input, record, kinds, default_limit);
+    checker.finish(|| filter.expect("checked"))
 }
 
 /// Accepts the name of a registered kind, listing the kinds when it is not one.

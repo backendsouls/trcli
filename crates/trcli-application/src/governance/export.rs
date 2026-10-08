@@ -59,9 +59,10 @@ pub struct ExportCommand {
 }
 
 impl ExportCommand {
-    /// Checks the destination and the format.
-    pub fn new(to: Option<&str>, format: Option<&str>) -> Result<Valid<Self>, Problem> {
-        let mut checker = Checker::new();
+    /// Checks the destination and the format with the caller's checker, so that their
+    /// problems are reported together with those of the filters. `None` means a problem
+    /// was recorded.
+    pub fn check(checker: &mut Checker, to: Option<&str>, format: Option<&str>) -> Option<Self> {
         let to = checker.required("--to", to, |path| {
             if path.trim().is_empty() {
                 Err(Rejection::new("must not be empty", "the path of a file"))
@@ -69,15 +70,15 @@ impl ExportCommand {
                 Ok(PathBuf::from(path))
             }
         });
-        let format = checker.optional("--format", format, |format| {
-            one_of(format, &ExportFormat::NAMES)
-        });
-        checker.finish(|| Self {
-            to: to.expect("checked"),
-            format: format
-                .flatten()
-                .map_or(ExportFormat::Markdown, |name| ExportFormat::named(&name)),
-        })
+        let format = checker.optional("--format", format, |format| one_of(format, &ExportFormat::NAMES));
+        Some(Self { to: to?, format: format?.map_or(ExportFormat::Markdown, |name| ExportFormat::named(&name)) })
+    }
+
+    /// Checks the destination and the format on their own.
+    pub fn new(to: Option<&str>, format: Option<&str>) -> Result<Valid<Self>, Problem> {
+        let mut checker = Checker::new();
+        let command = Self::check(&mut checker, to, format);
+        checker.finish(|| command.expect("checked"))
     }
 }
 
