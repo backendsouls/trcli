@@ -1,0 +1,4 @@
+# Limits that keep functions short enough to read in one screen (research.md, section 15).
+too-many-lines-threshold = 50
+cognitive-complexity-threshold = 10
+too-many-arguments-threshold = 5

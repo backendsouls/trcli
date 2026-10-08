@@ -1,0 +1,78 @@
+# The TRCLI workspace: one crate per architectural layer or outside concern.
+# Dependency direction: trcli-cli -> trcli-infra-* -> trcli-application -> trcli-domain.
+[workspace]
+resolver = "3"
+members = [
+    "crates/trcli-domain",
+    "crates/trcli-application",
+    "crates/trcli-infra-sqlite",
+    "crates/trcli-infra-system",
+    "crates/trcli-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/backendsouls/trcli"
+
+# Every version is pinned here once. A crate is added only with a written reason in
+# specs/000-foundation/research.md, section 3.
+[workspace.dependencies]
+trcli-domain = { path = "crates/trcli-domain" }
+trcli-application = { path = "crates/trcli-application" }
+trcli-infra-sqlite = { path = "crates/trcli-infra-sqlite" }
+trcli-infra-system = { path = "crates/trcli-infra-system" }
+
+clap = { version = "4.6", features = ["derive", "env", "wrap_help"] }
+clap_complete = "4.6"
+sea-orm = { version = "2.0", default-features = false, features = [
+    "macros",
+    "sqlx-sqlite",
+    "runtime-tokio",
+    "with-time",
+    "with-uuid",
+] }
+sea-orm-migration = { version = "2.0", default-features = false, features = [
+    "sqlx-sqlite",
+    "runtime-tokio",
+    "with-time",
+    "with-uuid",
+] }
+tokio = { version = "1.53", default-features = false, features = ["rt", "macros", "signal"] }
+time = { version = "0.3", features = ["formatting", "parsing", "macros"] }
+uuid = { version = "1.27", features = ["v7"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1.1"
+sha2 = "0.11"
+thiserror = "2.0"
+unicode-normalization = "0.1"
+unicode-width = "0.2"
+terminal_size = "0.4"
+anstream = "1.0"
+anstyle = "1.0"
+
+# Development only: never compiled into the trcli binary.
+cucumber = "0.23"
+assert_cmd = "2.2"
+trycmd = "1.2"
+tempfile = "3.27"
+
+# Documentation and readability are part of the build (research.md, section 15).
+[workspace.lints.rust]
+missing_docs = "deny"
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+missing_docs_in_private_items = "deny"
+too_many_lines = "deny"
+cognitive_complexity = "deny"
+too_many_arguments = "deny"
+wildcard_imports = "deny"
+enum_glob_use = "deny"
+
+[profile.release]
+lto = "thin"
+strip = true

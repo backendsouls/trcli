@@ -1,0 +1,27 @@
+[package]
+name = "trcli-application"
+description = "TRCLI application layer: use cases, ports, and the registries features plug into."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+# In-memory fakes of every port and the contract test suites adapters must pass.
+test-support = []
+# Two sample record kinds that prove the feature contract. Never enabled in a release.
+sample-kind = []
+
+[dependencies]
+trcli-domain.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+time.workspace = true
+
+[dev-dependencies]
+trcli-application = { path = ".", features = ["test-support", "sample-kind"] }
+tokio.workspace = true
+
+[lints]
+workspace = true
