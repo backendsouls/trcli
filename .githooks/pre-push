@@ -1,6 +1,8 @@
 #!/bin/sh
-# Runs every test before a push, so that what reaches the remote has passed them:
+# Checks formatting and lints, then runs every test before a push, so that what reaches
+# the remote has passed them:
 #
+#   - formatting (`cargo fmt`) and lints (`cargo clippy`), as CI checks them;
 #   - unit tests, beside the code they test;
 #   - integration tests: the use cases against the test doubles, and each adapter
 #     against its port's contract;
@@ -51,16 +53,33 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo "pre-push: note: the working tree has uncommitted changes; they are tested too." >&2
 fi
 
+# Stops the push when a check fails, naming the check and how to fix it.
+refuse() {
+    echo >&2
+    echo "pre-push: $1; nothing was pushed." >&2
+    echo "          $2" >&2
+    echo "          Or push anyway with: git push --no-verify" >&2
+    exit 1
+}
+
+# The cheapest checks first, with the same commands CI runs.
+echo "pre-push: checking formatting..." >&2
+cargo fmt --all --check ||
+    refuse "the code is not formatted" "Format it with: cargo fmt --all"
+
+# Linted with and without the test clock, since each builds code the other does not.
+echo "pre-push: linting..." >&2
+cargo clippy --workspace --all-targets -- -D warnings ||
+    refuse "clippy found problems" "Fix them, then run: cargo clippy --workspace --all-targets"
+cargo clippy --workspace --all-targets --features trcli-cli/test-clock -- -D warnings ||
+    refuse "clippy found problems with the test clock" \
+        "Fix them, then run: cargo clippy --workspace --all-targets --features trcli-cli/test-clock"
+
 echo "pre-push: running every test (unit, integration, functional, behaviour)..." >&2
 
 # One command runs them all: every crate's unit and integration tests, the structural
 # gates, the black-box tests, and the scenarios. The `test-clock` feature gives the
 # scenarios a fixed clock and seeded identifiers.
-if cargo test --workspace --no-fail-fast --features trcli-cli/test-clock; then
-    echo "pre-push: every test passed." >&2
-else
-    echo >&2
-    echo "pre-push: tests failed; nothing was pushed." >&2
-    echo "          Fix them, or push anyway with: git push --no-verify" >&2
-    exit 1
-fi
+cargo test --workspace --no-fail-fast --features trcli-cli/test-clock ||
+    refuse "tests failed" "Fix them, then run the hook's command again."
+echo "pre-push: formatting, lints, and every test passed." >&2

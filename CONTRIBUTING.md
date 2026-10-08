@@ -30,10 +30,14 @@ Turn on the repository's hooks once per clone:
 scripts/install-hooks.sh
 ```
 
-From then on, **before every push** every test is run — unit, integration, functional,
-and behaviour — and the push is refused if one fails:
+From then on, **before every push** the formatting and lints are checked and every test is
+run — unit, integration, functional, and behaviour — and the push is refused if one
+fails. The cheapest checks run first:
 
 ```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo clippy --workspace --all-targets --features trcli-cli/test-clock -- -D warnings
 cargo test --workspace --no-fail-fast --features trcli-cli/test-clock
 ```
 
@@ -44,7 +48,7 @@ cargo test --workspace --no-fail-fast --features trcli-cli/test-clock
 | Where they are | `.githooks/`, under version control |
 
 The hook does nothing on a branch without a Cargo workspace (one that holds only
-specifications), and nothing when a push only deletes branches. CI runs the same tests on
+specifications), and nothing when a push only deletes branches. CI runs the same checks on
 three systems; the hook is there so that you find out before the push, not after.
 
 ## Every check, and what it protects
