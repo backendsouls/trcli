@@ -1,0 +1,19 @@
+[package]
+name = "trcli-testing"
+description = "TRCLI test support: in-memory doubles of every port, and the contract suites every adapter must pass."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# A development dependency of the other crates, never a dependency: nothing here is
+# compiled into the trcli binary. crates/trcli-cli/tests/layering.rs checks that.
+[dependencies]
+trcli-domain.workspace = true
+trcli-application.workspace = true
+time.workspace = true
+
+[lints]
+workspace = true

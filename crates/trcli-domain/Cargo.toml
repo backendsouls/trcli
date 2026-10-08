@@ -1,0 +1,19 @@
+[package]
+name = "trcli-domain"
+description = "TRCLI domain: the rules of research records, with no I/O, no async, and no framework."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Nothing may be added here that touches storage, display, or invocation (FR-070);
+# tests/layering.rs fails if the list grows beyond these four.
+[dependencies]
+thiserror.workspace = true
+time.workspace = true
+uuid.workspace = true
+unicode-normalization.workspace = true
+
+[lints]
+workspace = true

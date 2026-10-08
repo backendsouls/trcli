@@ -1,0 +1,83 @@
+# Every check a change must pass, on every supported system (FR-074, SC-014).
+#
+# The same commands are listed in CONTRIBUTING.md; a contributor can run all of them
+# locally before opening a pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTDOCFLAGS: -D warnings
+
+jobs:
+  checks:
+    name: Checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      # rust-toolchain.toml pins the version; rustup installs it on first use.
+      - name: Show the toolchain
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Formatting
+        run: cargo fmt --all --check
+
+      # Documentation and readability are part of the build: an undocumented item, a
+      # function over 50 lines, or one too tangled fails here.
+      - name: Lints (default build)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Lints (with the test clock)
+        run: cargo clippy --workspace --all-targets --features trcli-cli/test-clock -- -D warnings
+
+      - name: Documentation of every item, public and private
+        run: cargo doc --workspace --no-deps --document-private-items
+
+      # Unit tests, the use cases against the doubles, the contract suites against the
+      # doubles and against SQLite, the upgrade tests, and the structural gates: layering,
+      # help examples, scenario coverage, the invalid-input gate, atomic writes.
+      - name: Tests (default build)
+        run: cargo test --workspace --no-fail-fast
+
+      # The same, plus what needs a fixed clock and seeded identifiers: the acceptance
+      # scenarios against the built tool, the usage guides' examples, both output forms
+      # agreeing, and text in any script.
+      - name: Behaviour scenarios and gates (with the test clock)
+        run: cargo test --workspace --no-fail-fast --features trcli-cli/test-clock
+
+      # The sample kinds live in an example; the binary must not carry them.
+      - name: The trcli binary has no sample commands
+        shell: bash
+        run: |
+          cargo build -p trcli-cli
+          help="$(cargo run -q -p trcli-cli -- --help)"
+          if echo "$help" | grep -E 'specimen|sample-note'; then
+            echo "the default build has a sample command" >&2
+            exit 1
+          fi
+
+  performance:
+    name: Timings (SC-012)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: A simple command under 100 ms; 10,000 records listed and searched under 2 s
+        run: |
+          cargo build --release -p trcli-cli --example sample_kinds --features test-clock
+          cargo test --release -p trcli-cli --test performance --features test-clock -- --ignored

@@ -1,0 +1,85 @@
+#!/bin/sh
+# Checks formatting and lints, then runs every test before a push, so that what reaches
+# the remote has passed them:
+#
+#   - formatting (`cargo fmt`) and lints (`cargo clippy`), as CI checks them;
+#   - unit tests, beside the code they test;
+#   - integration tests: the use cases against the test doubles, and each adapter
+#     against its port's contract;
+#   - functional tests: the structural gates and the black-box tests of the built tool;
+#   - behaviour tests: the Gherkin scenarios run against the built tool.
+#
+# Turn it on once per clone with `scripts/install-hooks.sh`.
+# Skip it for one push with `git push --no-verify`, or with `TRCLI_SKIP_HOOKS=1`.
+#
+# The tests run on the files in your working tree, which is what is pushed when the tree
+# is clean; uncommitted changes are tested too, and the hook says so.
+
+set -eu
+
+if [ "${TRCLI_SKIP_HOOKS:-}" = "1" ]; then
+    echo "pre-push: skipped (TRCLI_SKIP_HOOKS=1)" >&2
+    exit 0
+fi
+
+# Nothing is checked when the push only deletes branches: git gives one line per ref on
+# standard input, and a deleted ref has an all-zero local object name.
+pushes_something=0
+while read -r _local_ref local_object _remote_ref _remote_object; do
+    case "$local_object" in
+        *[!0]*) pushes_something=1 ;;
+    esac
+done
+if [ "$pushes_something" = "0" ]; then
+    exit 0
+fi
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+# Branches that hold only specifications have no code to test.
+if [ ! -f Cargo.toml ]; then
+    echo "pre-push: no Cargo workspace on this branch; nothing to test" >&2
+    exit 0
+fi
+
+if ! command -v cargo >/dev/null 2>&1; then
+    echo "pre-push: cargo is not installed, so the tests cannot run." >&2
+    echo "          Install Rust (https://rustup.rs), or push with --no-verify." >&2
+    exit 1
+fi
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    echo "pre-push: note: the working tree has uncommitted changes; they are tested too." >&2
+fi
+
+# Stops the push when a check fails, naming the check and how to fix it.
+refuse() {
+    echo >&2
+    echo "pre-push: $1; nothing was pushed." >&2
+    echo "          $2" >&2
+    echo "          Or push anyway with: git push --no-verify" >&2
+    exit 1
+}
+
+# The cheapest checks first, with the same commands CI runs.
+echo "pre-push: checking formatting..." >&2
+cargo fmt --all --check ||
+    refuse "the code is not formatted" "Format it with: cargo fmt --all"
+
+# Linted with and without the test clock, since each builds code the other does not.
+echo "pre-push: linting..." >&2
+cargo clippy --workspace --all-targets -- -D warnings ||
+    refuse "clippy found problems" "Fix them, then run: cargo clippy --workspace --all-targets"
+cargo clippy --workspace --all-targets --features trcli-cli/test-clock -- -D warnings ||
+    refuse "clippy found problems with the test clock" \
+        "Fix them, then run: cargo clippy --workspace --all-targets --features trcli-cli/test-clock"
+
+echo "pre-push: running every test (unit, integration, functional, behaviour)..." >&2
+
+# One command runs them all: every crate's unit and integration tests, the structural
+# gates, the black-box tests, and the scenarios. The `test-clock` feature gives the
+# scenarios a fixed clock and seeded identifiers.
+cargo test --workspace --no-fail-fast --features trcli-cli/test-clock ||
+    refuse "tests failed" "Fix them, then run the hook's command again."
+echo "pre-push: formatting, lints, and every test passed." >&2

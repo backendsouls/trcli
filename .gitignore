@@ -1,0 +1,23 @@
+# Rust
+target/
+debug/
+release/
+*.rs.bk
+*.rlib
+*.prof*
+
+# Databases and scratch workspaces made while testing
+*.db
+*.db-wal
+*.db-shm
+tests/tmp/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
+.env*

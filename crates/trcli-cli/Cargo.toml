@@ -1,0 +1,77 @@
+[package]
+name = "trcli-cli"
+description = "TRCLI, The Research CLI: the trcli binary, its composition root, and its presentation."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "trcli_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "trcli"
+path = "src/main.rs"
+
+# "trcli with a sample feature": two sample kinds of record added from outside the crates,
+# to prove and to show how a feature plugs in. The acceptance scenarios about records run
+# against this example; the trcli binary itself never contains it.
+[[example]]
+name = "sample_kinds"
+path = "examples/sample_kinds/main.rs"
+
+# The black-box tests of the binary live in tests/, beside the feature files
+# they run.
+[[test]]
+name = "bdd"
+harness = false
+required-features = ["test-clock"]
+
+[[test]]
+name = "usage"
+required-features = ["test-clock"]
+
+[[test]]
+name = "forms_agree"
+required-features = ["test-clock"]
+
+[[test]]
+name = "any_script"
+required-features = ["test-clock"]
+
+[[test]]
+name = "performance"
+required-features = ["test-clock"]
+
+[features]
+# Fixed clock and seeded identifiers taken from the environment. For BDD runs only.
+test-clock = ["trcli-infra-system/test-clock"]
+
+[dependencies]
+trcli-domain.workspace = true
+trcli-application.workspace = true
+trcli-infra-sqlite.workspace = true
+trcli-infra-system.workspace = true
+clap.workspace = true
+clap_complete.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+time = { workspace = true, features = ["local-offset"] }
+unicode-width.workspace = true
+terminal_size.workspace = true
+anstyle.workspace = true
+
+[dev-dependencies]
+trcli-testing.workspace = true
+cucumber.workspace = true
+assert_cmd.workspace = true
+tempfile.workspace = true
+sea-orm.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["rt", "macros"] }
+
+[lints]
+workspace = true
