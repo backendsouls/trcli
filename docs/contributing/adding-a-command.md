@@ -33,7 +33,7 @@ Scenario: An unknown kind is answered with the kinds that exist
   And stderr contains "specimen, sample-note"
 ```
 
-Run `cargo test -p trcli-cli --test bdd --features test-clock,sample-kind` and see them fail.
+Run `cargo test -p trcli-cli --test bdd --example sample_kinds --features test-clock` and see them fail.
 
 ## 2. The use case, with its test first
 
@@ -66,8 +66,10 @@ pub async fn list_tags<U: TagStore>(unit: &U, kinds: &KindRegistry, kind: Option
   once and under the name the researcher typed (`--kind`).
 - The view model derives `Serialize`: that is the structured form. Lists are
   `{ items, total }`.
-- Its unit test, in the same file, uses the in-memory fakes of
-  `trcli_application::testing` and `block_on`.
+- Its test is written first, in `crates/trcli-application/tests/use_cases/<module>.rs`,
+  with the in-memory doubles of the `trcli-testing` crate and its `block_on`. A use case
+  is tested through what it makes public, as its callers see it. (Pure logic that needs no
+  double — a parser, a rule — is tested inline, beside the code.)
 
 If your use case **changes** something, it takes `&mut U` with `AuditLog` among its ports
 and records an audit entry for the change; the handler commits.
@@ -157,7 +159,7 @@ $ trcli tag list
 then fill in what it prints and read the result:
 
 ```sh
-TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --features test-clock,sample-kind
+TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --example sample_kinds --features test-clock
 git diff docs/usage
 ```
 
@@ -165,6 +167,6 @@ git diff docs/usage
 
 ```sh
 cargo fmt --all
-cargo clippy --workspace --all-targets --features trcli-cli/test-clock,trcli-cli/sample-kind -- -D warnings
-cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind
+cargo clippy --workspace --all-targets --features trcli-cli/test-clock -- -D warnings
+cargo test --workspace --features trcli-cli/test-clock
 ```

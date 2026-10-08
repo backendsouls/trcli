@@ -10,8 +10,7 @@ use trcli_infra_sqlite::connection::SqliteOpener;
 #[tokio::test(flavor = "current_thread")]
 async fn sqlite_passes_the_workspace_contract() {
     let databases = support::Databases::new();
-    trcli_application::testing::contract_workspace::run(&SqliteOpener::new(200), databases.path())
-        .await;
+    trcli_testing::contract_workspace::run(&SqliteOpener::new(200), databases.path()).await;
 }
 
 /// The damage reported when opening `path`.

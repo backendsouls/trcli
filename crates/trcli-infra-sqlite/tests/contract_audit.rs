@@ -6,15 +6,15 @@ mod support;
 use trcli_application::governance::verify::{Fault, TrailVerdict, verify};
 use trcli_application::ports::audit::AuditLog;
 use trcli_application::ports::unit_of_work::{Storage, UnitOfWork};
-use trcli_application::testing::environment::stamp;
-use trcli_application::testing::interaction::RecordingProgress;
 use trcli_domain::governance::audit::{AuditAction, AuditDraft};
 use trcli_infra_sqlite::digest::Sha256Digest;
+use trcli_testing::environment::stamp;
+use trcli_testing::interaction::RecordingProgress;
 
 #[tokio::test(flavor = "current_thread")]
 async fn sqlite_passes_the_audit_contract() {
     let databases = support::Databases::new();
-    trcli_application::testing::contract_audit::run(async || databases.fresh().await).await;
+    trcli_testing::contract_audit::run(async || databases.fresh().await).await;
 }
 
 #[tokio::test(flavor = "current_thread")]

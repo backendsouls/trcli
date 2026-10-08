@@ -7,12 +7,6 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[features]
-# In-memory fakes of every port and the contract test suites adapters must pass.
-test-support = []
-# Two sample record kinds that prove the feature contract. Never enabled in a release.
-sample-kind = []
-
 [dependencies]
 trcli-domain.workspace = true
 serde.workspace = true
@@ -20,8 +14,12 @@ thiserror.workspace = true
 time.workspace = true
 
 [dev-dependencies]
-trcli-application = { path = ".", features = ["test-support", "sample-kind"] }
-tokio.workspace = true
+trcli-testing.workspace = true
+
+# The use cases' tests, which need the doubles, are one integration test.
+[[test]]
+name = "use_cases"
+path = "tests/use_cases/main.rs"
 
 [lints]
 workspace = true

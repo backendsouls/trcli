@@ -4,7 +4,7 @@
 //! - Listing or searching 10,000 records of one kind answers in under two seconds.
 //!
 //! These are timings, so they are ignored by default and run on purpose, on an optimized
-//! build: `cargo test --release --test performance --features test-clock,sample-kind --
+//! build: `cargo test --release --test performance --example sample_kinds --features test-clock --
 //! --ignored`. Each figure is the best of several runs, so that one slow start of a
 //! process on a busy machine does not fail the build.
 
@@ -56,7 +56,7 @@ async fn load_ten_thousand(sandbox: &Sandbox) {
 #[test]
 #[ignore = "a timing; run on purpose with --ignored on a release build"]
 fn a_simple_command_answers_in_under_a_tenth_of_a_second() {
-    let sandbox = Sandbox::with_workspace();
+    let sandbox = Sandbox::with_samples().init();
     let limit = Duration::from_millis(100);
     for arguments in [
         &["--version"][..],
@@ -75,7 +75,7 @@ fn a_simple_command_answers_in_under_a_tenth_of_a_second() {
 #[tokio::test(flavor = "current_thread")]
 #[ignore = "a timing; run on purpose with --ignored on a release build"]
 async fn listing_and_searching_ten_thousand_records_answers_in_under_two_seconds() {
-    let sandbox = Sandbox::with_workspace();
+    let sandbox = Sandbox::with_samples().init();
     load_ten_thousand(&sandbox).await;
     let limit = Duration::from_secs(2);
     let listed = sandbox

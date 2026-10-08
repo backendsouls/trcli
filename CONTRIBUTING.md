@@ -18,8 +18,8 @@ new kind of record, [`docs/contributing/adding-a-record-kind.md`](./docs/contrib
 cargo build --workspace
 cargo run -p trcli-cli -- --help
 
-# With the two sample record kinds, to try what every record shares:
-cargo run -p trcli-cli --features sample-kind -- specimen add --title "First"
+# The same tool with two sample kinds of record added, to try what every record shares:
+cargo run -p trcli-cli --example sample_kinds -- specimen add --title "First"
 ```
 
 ## Every check, and what it protects
@@ -31,8 +31,8 @@ Run these before opening a pull request. CI runs the same on Linux, macOS, and W
 | `cargo fmt --all --check` | One formatting for everyone |
 | `cargo clippy --workspace --all-targets -- -D warnings` | Every item documented, public and private; functions at most 50 lines, 5 arguments, and a complexity of 10; no wildcard imports |
 | `cargo doc --workspace --no-deps --document-private-items` (with `RUSTDOCFLAGS=-D warnings`) | The documentation builds and its links resolve |
-| `cargo test --workspace` | Unit tests; the contract suites against the fakes **and** against SQLite; upgrade tests; and the structural gates below |
-| `cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind` | The acceptance scenarios against the built binary, the usage guides' examples, and the gates that need the sample kinds |
+| `cargo test --workspace` | Unit tests; the use cases against the doubles; the contract suites against the doubles **and** against SQLite; upgrade tests; and the structural gates below |
+| `cargo test --workspace --features trcli-cli/test-clock` | The same, plus the acceptance scenarios against the built tool and the usage guides' examples, which need a fixed clock and seeded identifiers |
 
 The structural gates, each a test file at the repository root:
 
@@ -43,11 +43,11 @@ The structural gates, each a test file at the repository root:
 | `tests/invalid_input_gate.rs` | an input of a command has no scenario in which an invalid form of it is rejected |
 | `tests/help_examples.rs` | a command has no description or no example, an option has no help, or a group of commands has no usage guide |
 | `tests/usage.rs` | an example in `docs/usage/*.md` does not behave as written |
-| `tests/sample_kind_is_external.rs` | a foundation file names a sample record kind |
+| `tests/sample_kind_is_external.rs` | a source file of any crate names a sample record kind |
 | `tests/forms_agree.rs` | the form for people leaves out something the structured form says |
 
 Timings (`tests/performance.rs`) are run on purpose:
-`cargo test --release -p trcli-cli --test performance --features test-clock,sample-kind -- --ignored`.
+`cargo test --release -p trcli-cli --test performance --example sample_kinds --features test-clock -- --ignored`.
 
 ## The order of work
 
@@ -62,7 +62,7 @@ constitution that a reviewer will ask you to show.
    use case with in-memory fakes, then the adapter with the contract suite.
 3. **The code** that makes them pass.
 4. **The usage guide**, `docs/usage/<noun>.md`, with examples. Write the commands, then run
-   `TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --features test-clock,sample-kind`
+   `TRCLI_BLESS_USAGE=1 cargo test -p trcli-cli --test usage --example sample_kinds --features test-clock`
    to fill in what the tool prints, and read the difference before committing it.
 
 Open one pull request per phase of your spec's `tasks.md`, stacked on the previous one.
@@ -78,10 +78,24 @@ trcli-cli  ─▶  trcli-infra-sqlite  ─▶  trcli-application  ─▶  trcli-
 | Crate | Holds | May not |
 |-------|-------|---------|
 | `trcli-domain` | The rules of the research: value objects, entities, what is valid | Do I/O, use `async`, depend on any framework |
-| `trcli-application` | Use cases; ports (small traits named for what the caller needs); validated commands; view models; in-memory fakes and contract suites (`testing`) | Name an adapter, parse a command line, render |
+| `trcli-application` | Use cases; ports (small traits named for what the caller needs); validated commands; view models | Name an adapter, parse a command line, render |
 | `trcli-infra-sqlite` | SeaORM entities, migrations, the stores behind the storage ports | Know the command line, the file system's conventions, or the other adapter |
 | `trcli-infra-system` | Paths, files, the clock, identifiers, the actor: everything that differs between systems | Know SQL |
+| `trcli-testing` | In-memory doubles of every port, and the contract suites every adapter must pass. A development dependency only | Be compiled into the tool (`tests/layering.rs` checks) |
 | `trcli-cli` | clap definitions (`args/`), handlers (`commands/`), rendering (`render/`), and `compose.rs` | Decide anything a use case should decide |
+
+### Where tests go
+
+| Kind of test | Where | Why there |
+|--------------|-------|-----------|
+| Pure logic: a value object, a rule, a parser | Inline, in a `#[cfg(test)] mod tests` beside the code | Rust's convention; it can see private items |
+| A use case, which needs doubles of its ports | `crates/trcli-application/tests/use_cases/<module>.rs` | It uses only the public interface, and the doubles live outside the crate |
+| An adapter against its port's contract | `crates/trcli-infra-*/tests/` | The same suite the double passes |
+| Behaviour through the built tool | `tests/features/` (Gherkin), `tests/*.rs` | They run the binary as a researcher would |
+
+Doubles are **fakes**, not mocks: small working implementations held to the same contract
+suites as the real adapters. A test then says what must be true afterwards, not which
+calls were made, and a use case can be rewritten without rewriting its tests.
 
 A feature is a **module of the same name in each layer**, not a crate. It refers to another
 feature's records by `RecordRef` only, and reaches another feature's behaviour only through

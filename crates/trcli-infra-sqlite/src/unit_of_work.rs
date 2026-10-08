@@ -29,6 +29,15 @@ impl SqliteUnit {
     }
 }
 
+impl SqliteUnit {
+    /// The transaction itself, for a feature kept outside this crate to implement its own
+    /// store on this unit of work. Stores built into this crate use the field directly;
+    /// the one caller is the example that shows a feature added from outside.
+    pub fn transaction(&self) -> &DatabaseTransaction {
+        &self.transaction
+    }
+}
+
 impl UnitOfWork for SqliteUnit {
     async fn commit(self) -> Result<Option<AuditHead>, StoreError> {
         // A busy database surfaces here too: `store_error` reports it as such, so the

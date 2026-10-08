@@ -89,7 +89,7 @@ cargo build --workspace
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind
+cargo test --workspace --features trcli-cli/test-clock
 ```
 
 The code is a Cargo workspace of five crates, one per layer, so that the compiler enforces
@@ -98,6 +98,14 @@ which code may depend on which:
 ```text
 trcli-cli  ─▶  trcli-infra-sqlite  ─▶  trcli-application  ─▶  trcli-domain
            ─▶  trcli-infra-system  ─▶
+```
+
+A sixth crate, `trcli-testing`, holds the test doubles and is never compiled into the
+tool. `crates/trcli-cli/examples/sample_kinds` is the same tool with two sample kinds of
+record added from outside, which is how a feature plugs in:
+
+```sh
+cargo run -p trcli-cli --example sample_kinds -- specimen add --title "Soil sample 14"
 ```
 
 ## License

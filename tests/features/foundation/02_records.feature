@@ -1,6 +1,6 @@
 # specs/000-foundation, User Story 2: Work with any record the same way.
-# Run against the two sample kinds, `specimen` and `sample-note` (build feature
-# `sample-kind`), which get all of this by registering a descriptor.
+# Run against the two sample kinds, `specimen` and `sample-note`, which live in the
+# example `sample_kinds` and get all of this by registering a descriptor.
 Feature: Work with any record the same way
 
   Background:

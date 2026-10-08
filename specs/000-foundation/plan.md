@@ -36,7 +36,7 @@ libraries to a minimum.
 
 **Storage**: Local only — one SQLite database per workspace at `<workspace>/.trcli/trcli.db` (path configurable), with `config.toml`, `audit.head`, and `backups/` beside it; user settings in the platform's configuration directory
 
-**Testing**: `cargo test` for unit tests with in-memory fakes of every port; contract tests run against both the fakes and the SQLite adapter; cucumber 0.23 running the spec's Gherkin scenarios against the built `trcli` binary; our own runner (`tests/usage.rs`) executing the examples in `docs/usage/*.md`. Test crates are development dependencies only.
+**Testing**: `cargo test` for unit tests beside pure logic; the use cases tested against in-memory doubles of every port (crate `trcli-testing`); contract tests run against both the fakes and the SQLite adapter; cucumber 0.23 running the spec's Gherkin scenarios against the built `trcli` binary; our own runner (`tests/usage.rs`) executing the examples in `docs/usage/*.md`. Test crates are development dependencies only.
 
 **Target Platform**: Linux, macOS, and Windows (x86_64 and aarch64), one self-contained binary with SQLite compiled in
 
@@ -138,9 +138,10 @@ crates/
 │       ├── governance/         # record an entry, query, verify, export; telemetry
 │       ├── outcome.rs          # Outcome and Problem: the fixed set of ways a command ends
 │       ├── validation.rs       # helpers and the pattern every command constructor follows
-│       ├── sample/             # two sample record kinds (feature "sample-kind"; never released)
-│       └── testing/            # in-memory fakes of every port and the contract test suites
-│                               # (feature "test-support")
+│       └── (tests/use_cases/)  # the use cases' tests, against the doubles below
+│
+├── trcli-testing/              # development only: in-memory doubles of every port and the
+│                               # contract suites every adapter must pass
 │
 ├── trcli-infra-sqlite/         # SeaORM entities, migrations, port implementations
 │   ├── src/{connection.rs, unit_of_work.rs, entities/, migrations/, stores/}
@@ -159,8 +160,10 @@ crates/
         ├── shared_verbs.rs     # builds list / show / rm / tag / note for any record kind
         ├── commands/           # parsed arguments → use case → view model
         ├── render/             # human.rs, json.rs, theme.rs, symbols.rs, width.rs, problem.rs
+        ├── extension.rs        # how a feature adds its kinds and commands
         ├── prompt.rs           # terminal, assume-yes, and refuse-to-ask Prompter
         └── progress.rs
+    (examples/sample_kinds/)    # the tool with two sample record kinds added from outside
 
 tests/                          # black-box tests of the binary
 ├── features/foundation/        # Gherkin, one file per user story (8)
@@ -180,7 +183,8 @@ docs/
 └── contributing/               # adding-a-command.md, adding-a-record-kind.md
 ```
 
-**Structure Decision**: A Cargo workspace of five crates. Dependency direction is
+**Structure Decision**: A Cargo workspace of five crates, plus one that holds test support
+and is never compiled into the tool. Dependency direction is
 `trcli-cli` → `trcli-infra-*` → `trcli-application` → `trcli-domain`; the two adapter
 crates do not depend on each other. Each later feature adds a module of the same name to
 the domain, application, and SQLite crates and to the CLI's `args`, `commands`, and

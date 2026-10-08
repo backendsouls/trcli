@@ -1,15 +1,16 @@
 //! `trcli completions <shell>` (FR-059): a completion script generated from the same
 //! definitions the tool parses with, so it cannot fall out of step with them.
 
+use clap::Command;
+
 use crate::args::completions::CompletionsArgs;
-use crate::cli::command;
 use crate::output::Reply;
 use crate::render::views::Text;
 
-/// Builds the completion script for the shell that was named.
-pub fn run(arguments: &CompletionsArgs) -> Reply {
+/// Builds the completion script, for the shell that was named, of the whole command tree.
+pub fn run(arguments: &CompletionsArgs, command: &mut Command) -> Reply {
     let mut script = Vec::new();
-    clap_complete::generate(arguments.shell, &mut command(), "trcli", &mut script);
+    clap_complete::generate(arguments.shell, command, "trcli", &mut script);
     Reply::new(Text {
         text: String::from_utf8_lossy(&script).into_owned(),
     })
@@ -27,7 +28,12 @@ mod tests {
     #[test]
     fn a_script_is_generated_for_every_supported_shell_and_names_the_commands() {
         for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::PowerShell] {
-            let script = run(&CompletionsArgs { shell }).view.to_json()["text"]
+            let script = run(
+                &CompletionsArgs { shell },
+                &mut crate::cli::command(&crate::extension::NoExtension),
+            )
+            .view
+            .to_json()["text"]
                 .as_str()
                 .unwrap_or_default()
                 .to_owned();

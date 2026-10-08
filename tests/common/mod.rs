@@ -13,6 +13,25 @@ pub fn repository() -> PathBuf {
     printed_form(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
 }
 
+/// The example program that is `trcli` with the sample kinds of record added. Cargo
+/// builds it beside the binary when the whole test suite is run; a single suite is run
+/// with `--example sample_kinds` added to build it too.
+pub fn sample_program() -> PathBuf {
+    let binary = Path::new(env!("CARGO_BIN_EXE_trcli"));
+    let name = format!("sample_kinds{}", std::env::consts::EXE_SUFFIX);
+    let program = binary
+        .parent()
+        .expect("the binary is in a directory")
+        .join("examples")
+        .join(name);
+    assert!(
+        program.is_file(),
+        "{} is not built: run the suite with `--example sample_kinds`, or run every test",
+        program.display()
+    );
+    program
+}
+
 /// A directory in the form the tool prints it: with links resolved (on some systems the
 /// temporary directory is reached through one), and without the prefix Windows puts on
 /// resolved paths.
@@ -61,25 +80,42 @@ pub struct Sandbox {
     directory: TempDir,
     /// How many commands were run; seeds the identifiers.
     runs: std::cell::Cell<u64>,
+    /// The program run: the `trcli` binary, or the example that adds the sample kinds.
+    program: PathBuf,
 }
 
 impl Sandbox {
-    /// An empty scratch directory.
+    /// An empty scratch directory, for the `trcli` binary.
     pub fn new() -> Self {
+        Self::for_program(PathBuf::from(env!("CARGO_BIN_EXE_trcli")))
+    }
+
+    /// An empty scratch directory, for the tool with the sample kinds added.
+    pub fn with_samples() -> Self {
+        Self::for_program(sample_program())
+    }
+
+    /// An empty scratch directory in which `program` is run.
+    fn for_program(program: PathBuf) -> Self {
         let directory = tempfile::tempdir().expect("a temporary directory");
         std::fs::create_dir_all(directory.path().join("work")).expect("the working directory");
         Self {
             directory,
             runs: std::cell::Cell::new(0),
+            program,
         }
     }
 
-    /// A scratch directory holding a workspace named "Lab".
-    pub fn with_workspace() -> Self {
-        let sandbox = Self::new();
-        let created = sandbox.run(&["init", "--name", "Lab"]);
+    /// Creates a workspace named "Lab" in the scratch directory.
+    pub fn init(self) -> Self {
+        let created = self.run(&["init", "--name", "Lab"]);
         assert_eq!(created.code, 0, "{}", created.stderr);
-        sandbox
+        self
+    }
+
+    /// A scratch directory holding a workspace named "Lab", for the `trcli` binary.
+    pub fn with_workspace() -> Self {
+        Self::new().init()
     }
 
     /// The scratch directory, in the form the tool prints paths in.
@@ -97,7 +133,7 @@ impl Sandbox {
     pub fn command(&self, arguments: &[&str]) -> Command {
         self.runs.set(self.runs.get() + 1);
         let settings = self.home().join("user-settings");
-        let mut command = Command::new(env!("CARGO_BIN_EXE_trcli"));
+        let mut command = Command::new(&self.program);
         command
             .args(arguments)
             .current_dir(self.work())

@@ -9,9 +9,10 @@ all.
 
 The foundation itself has no kind of record; kinds arrive with the features that own them
 (references with the literature feature, tasks with projects, and so on). The examples
-below use `specimen` and `sample-note`, two sample kinds that exist only in test builds of
-the tool (`cargo build --features sample-kind`) to show and to check exactly this shared
-behaviour.
+below use `specimen` and `sample-note`, two sample kinds that are not part of `trcli`:
+they live in an example program that is the same tool with those two kinds added
+(`cargo run -p trcli-cli --example sample_kinds -- <command>`), to show and to check
+exactly this shared behaviour.
 
 ## Commands
 

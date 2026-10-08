@@ -144,7 +144,8 @@ fn printed(finished: &Finished, home: &str) -> Vec<String> {
 
 /// Runs every example of one guide; returns what each printed.
 fn run_guide(text: &str, guide: &str) -> Vec<(Example, Vec<String>)> {
-    let sandbox = Sandbox::new();
+    // The guides about records need records: the tool is run with the sample kinds added.
+    let sandbox = Sandbox::with_samples();
     let home = sandbox.home().display().to_string();
     let mut results = Vec::new();
     for example in examples(text) {

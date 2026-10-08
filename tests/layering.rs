@@ -64,7 +64,7 @@ fn names(graph: &BTreeMap<String, BTreeMap<String, Vec<String>>>, package: &str)
 }
 
 #[test]
-fn the_workspace_has_exactly_the_five_crates_of_the_plan() {
+fn the_workspace_has_the_five_crates_of_the_plan_and_one_for_test_support() {
     let graph = dependencies();
     let crates: Vec<&str> = graph.keys().map(String::as_str).collect();
     assert_eq!(
@@ -74,9 +74,30 @@ fn the_workspace_has_exactly_the_five_crates_of_the_plan() {
             "trcli-cli",
             "trcli-domain",
             "trcli-infra-sqlite",
-            "trcli-infra-system"
+            "trcli-infra-system",
+            "trcli-testing"
         ]
     );
+}
+
+#[test]
+fn test_support_is_never_compiled_into_the_tool() {
+    let graph = dependencies();
+    // The graph holds only what is compiled into each crate; development dependencies
+    // are left out. The doubles and contract suites may appear in none of them.
+    for (package, direct) in &graph {
+        assert!(
+            !direct.contains_key("trcli-testing"),
+            "{package} depends on the test-support crate"
+        );
+    }
+    let allowed = ["time", "trcli-application", "trcli-domain"];
+    for dependency in names(&graph, "trcli-testing") {
+        assert!(
+            allowed.contains(&dependency.as_str()),
+            "trcli-testing may not depend on `{dependency}`"
+        );
+    }
 }
 
 #[test]

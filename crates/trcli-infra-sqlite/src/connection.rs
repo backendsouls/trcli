@@ -138,10 +138,6 @@ impl StorageOpener for SqliteOpener {
             .await
             .map_err(store_error)?;
         Migrator::up(&connection, None).await.map_err(store_error)?;
-        #[cfg(feature = "sample-kind")]
-        crate::sample::ensure_tables(&connection)
-            .await
-            .map_err(store_error)?;
         Ok(SqliteStorage {
             connection,
             path: database.to_path_buf(),
@@ -168,11 +164,6 @@ impl StorageOpener for SqliteOpener {
                 database,
             ));
         }
-        // The sample kinds' tables are not part of the workspace format; a build that has
-        // the sample kinds adds them to any workspace it opens. Failing to (an unwritable
-        // disk) only means the sample commands will not work there.
-        #[cfg(feature = "sample-kind")]
-        let _ = crate::sample::ensure_tables(&connection).await;
         Ok(SqliteStorage {
             connection,
             path: database.to_path_buf(),
@@ -193,6 +184,13 @@ impl SqliteStorage {
     /// The database file.
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// The connection itself, for a feature kept outside this crate to create its own
+    /// tables. Features built into the tool add a migration here instead; the one caller
+    /// is the example that shows a feature added from outside.
+    pub fn connection(&self) -> &DatabaseConnection {
+        &self.connection
     }
 
     /// Folds the write-ahead journal back into the database file, so that the file alone

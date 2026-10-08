@@ -97,7 +97,9 @@ feature's behaviour only through a port that feature publishes (FR-072).
 
 ## Proof that this contract is sufficient
 
-Two sample kinds, `specimen` and `sample-note`, are defined under `src/sample/` in the
-application crate and compiled only with the `sample-kind` build feature, which no release
-enables. The scenarios of user stories 2 and 8 run against them. If making them work
+Two sample kinds, `specimen` and `sample-note`, live in an example program,
+`crates/trcli-cli/examples/sample_kinds`, which is the whole tool with those kinds added
+from outside the crates through the `Extension` trait. No release contains them, and a
+test fails if any source file of any crate names them. The scenarios of user stories 2
+and 8 run against that program. If making them work
 requires editing foundation code rather than registering, this contract has a gap.

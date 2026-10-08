@@ -12,6 +12,7 @@ use trcli_domain::workspace::FormatVersion;
 
 use crate::args::Commands;
 use crate::args::global::GlobalArgs;
+use crate::extension::Extension;
 
 /// What is shown under the list of commands by `trcli --help`.
 const AFTER_HELP: &str = "\
@@ -31,8 +32,8 @@ pub fn version() -> String {
     )
 }
 
-/// The command tree of this build.
-pub fn command() -> Command {
+/// The command tree: the foundation's commands and those the extension adds.
+pub fn command(extension: &impl Extension) -> Command {
     let root = Command::new("trcli")
         // The name shown in usage lines is the tool's, not the file's: on Windows the
         // file is `trcli.exe`, and help must read the same on every system.
@@ -43,10 +44,7 @@ pub fn command() -> Command {
         .propagate_version(false)
         .subcommand_required(false)
         .arg_required_else_help(false);
-    let root = Commands::augment_subcommands(GlobalArgs::augment_args(root));
-    #[cfg(feature = "sample-kind")]
-    let root = crate::sample::extend(root);
-    root
+    Commands::augment_subcommands(GlobalArgs::augment_args(root)).subcommands(extension.commands())
 }
 
 /// What the researcher asked for.
@@ -150,7 +148,13 @@ pub fn usage_problem(error: &clap::Error) -> Problem {
 mod tests {
     //! Unit tests for the command line.
 
-    use super::{Parsed, command, is_information, parse, usage_problem, version};
+    use super::{Parsed, is_information, parse, usage_problem, version};
+    use crate::extension::NoExtension;
+
+    /// The command tree of the foundation alone.
+    fn command() -> clap::Command {
+        super::command(&NoExtension)
+    }
     use crate::args::Commands;
 
     /// Parses a command line given as words.

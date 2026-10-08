@@ -21,7 +21,7 @@ cargo clippy --workspace --all-targets -- -D warnings       # includes documenta
 cargo doc --workspace --no-deps --document-private-items   # fails on any undocumented item
 
 cargo test --workspace                                      # unit, contract, upgrade, and structural tests
-cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind
+cargo test --workspace --features trcli-cli/test-clock
                                                             # the same, plus the acceptance scenarios against
                                                             # the binary, the usage guides' examples, and the
                                                             # gates that need the sample kinds
@@ -30,17 +30,18 @@ cargo test --workspace --features trcli-cli/test-clock,trcli-cli/sample-kind
 cargo test -p trcli-cli --test layering                     # the dependency graph obeys the layers
 cargo test -p trcli-cli --test scenario_coverage            # every acceptance scenario has an automated check
 cargo test -p trcli-cli --test help_examples                # every command has help with an example
-cargo test -p trcli-cli --test bdd --features test-clock,sample-kind
-cargo test -p trcli-cli --test usage --features test-clock,sample-kind
-cargo test --release -p trcli-cli --test performance --features test-clock,sample-kind -- --ignored
+cargo test -p trcli-cli --test bdd --example sample_kinds --features test-clock
+cargo test -p trcli-cli --test usage --example sample_kinds --features test-clock
+cargo test --release -p trcli-cli --test performance --example sample_kinds --features test-clock -- --ignored
 ```
 
 **Expected**: every command exits 0. CI runs the same on Linux, macOS, and Windows.
 
-To run with the sample record kinds (`specimen`, `sample-note`) that the scenarios of stories 2 and 8 use:
+The scenarios of stories 2 and 8 need records. They use two sample kinds (`specimen`,
+`sample-note`) that live in an example: the same tool with those kinds added from outside.
 
 ```sh
-cargo build -p trcli-cli --features sample-kind      # adds the sample commands; never in a release build
+cargo build -p trcli-cli --example sample_kinds      # target/debug/examples/sample_kinds
 ```
 
 ## Manual walk-through
@@ -126,7 +127,7 @@ Tamper tests, with any SQLite tool:
 **Expected**: exit 6 both times — first naming the altered entry, then reporting that the
 trail was shortened.
 
-### Part: records (with `--features sample-kind`)
+### Part: records (with the example: `alias trcli="$OLDPWD/target/debug/examples/sample_kinds"`)
 
 ```sh
 trcli specimen add --title "First"        # prints spc-…

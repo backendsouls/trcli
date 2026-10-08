@@ -266,8 +266,8 @@ Indexes: `record(kind, deleted_at)`, `record(handle)` unique, `record(search_key
 - Their own settings, audit actions, problem codes, and telemetry, by registration.
 - Nothing in the tables above changes when a feature is added.
 - The sample kinds used to test the foundation (`specimen`, `sample-note`) have their own
-  tables, created by a separate migration set applied only under the `sample-kind` build
-  feature and not counted in the workspace format version.
+  tables, created by the example they live in, in the workspaces it is used in; they are
+  not part of the workspace format.
 
 The exact shape of those registrations is in
 [contracts/feature-contract.md](./contracts/feature-contract.md).

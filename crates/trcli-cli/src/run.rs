@@ -24,17 +24,24 @@ use crate::args::global::GlobalArgs;
 use crate::cli::{self, Invocation};
 use crate::commands;
 use crate::compose::Session;
+use crate::extension::{Extension, NoExtension};
 use crate::output::{Presentation, write_error, write_out};
 
 /// Runs the command given to this process and returns its exit code.
 pub fn main() -> ExitCode {
+    main_with(&NoExtension)
+}
+
+/// Runs the command given to this process, with the kinds of record and the commands an
+/// extension adds, and returns its exit code.
+pub fn main_with(extension: &impl Extension) -> ExitCode {
     // Asked before any other thread exists: on some systems the local offset cannot be
     // read safely afterwards. Without it, times are shown in UTC and say so.
     let zone = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
     let arguments: Vec<String> = std::env::args().collect();
-    let outcome = match cli::command().try_get_matches_from(&arguments) {
+    let outcome = match cli::command(extension).try_get_matches_from(&arguments) {
         Ok(matches) => match cli::parse(&matches) {
-            Ok(invocation) => execute(invocation, zone),
+            Ok(invocation) => execute(invocation, zone, extension),
             Err(error) => reject(&error, &arguments, zone),
         },
         Err(error) => reject(&error, &arguments, zone),
@@ -65,7 +72,7 @@ fn reject(error: &clap::Error, arguments: &[String], zone: UtcOffset) -> Outcome
 }
 
 /// Runs a parsed command on a single-threaded runtime.
-fn execute(invocation: Invocation, zone: UtcOffset) -> Outcome {
+fn execute(invocation: Invocation, zone: UtcOffset, extension: &impl Extension) -> Outcome {
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -76,7 +83,7 @@ fn execute(invocation: Invocation, zone: UtcOffset) -> Outcome {
             return Outcome::Failure;
         }
     };
-    let outcome = runtime.block_on(run(invocation, zone));
+    let outcome = runtime.block_on(run(invocation, zone, extension));
     // A question left open when the researcher interrupted is still waiting for input on
     // its own thread; the runtime is not allowed to wait for it.
     runtime.shutdown_background();
@@ -94,9 +101,9 @@ fn interrupted() -> Problem {
 
 /// Builds the session, runs the handler beside Ctrl-C, shows the result, and records the
 /// use of the command.
-async fn run(invocation: Invocation, zone: UtcOffset) -> Outcome {
+async fn run(invocation: Invocation, zone: UtcOffset, extension: &impl Extension) -> Outcome {
     let started = Instant::now();
-    let mut session = match Session::start(invocation.global.clone(), zone) {
+    let mut session = match Session::start(invocation.global.clone(), zone, extension) {
         Ok(session) => session,
         Err(failed) => {
             let (problem, presentation) = *failed;
@@ -105,7 +112,7 @@ async fn run(invocation: Invocation, zone: UtcOffset) -> Outcome {
         }
     };
     let result = tokio::select! {
-        result = commands::run(&mut session, &invocation) => result,
+        result = commands::run(&mut session, extension, &invocation) => result,
         _ = tokio::signal::ctrl_c() => Err(interrupted()),
     };
     let outcome = match result {

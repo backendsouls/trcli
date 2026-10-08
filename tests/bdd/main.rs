@@ -7,7 +7,7 @@
 //! gets its own temporary directory, a fixed clock, and seeded identifiers, so that it
 //! gives the same output on every run and on every system.
 //!
-//! Run with: `cargo test --test bdd --features test-clock,sample-kind`.
+//! Run with: `cargo test --test bdd --example sample_kinds --features test-clock`.
 
 mod steps;
 mod world;

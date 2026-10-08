@@ -12,10 +12,10 @@ use sea_orm::{ConnectionTrait, DbBackend, Statement};
 use trcli_application::ports::records::TagStore;
 use trcli_application::ports::unit_of_work::{Storage, StoreError, UnitOfWork};
 use trcli_application::ports::workspace::{StorageOpener, WorkspaceStore};
-use trcli_application::testing::environment::{SeededIds, stamp};
 use trcli_domain::shared::text::{LongText, Name, TagName};
 use trcli_domain::workspace::Workspace;
 use trcli_infra_sqlite::connection::SqliteOpener;
+use trcli_testing::environment::{SeededIds, stamp};
 
 #[tokio::test(flavor = "current_thread")]
 async fn foreign_keys_are_enforced() {

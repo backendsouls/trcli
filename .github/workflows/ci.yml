@@ -42,25 +42,26 @@ jobs:
       - name: Lints (default build)
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: Lints (with the sample kinds and the test clock)
-        run: cargo clippy --workspace --all-targets --features trcli-cli/test-clock,trcli-cli/sample-kind -- -D warnings
+      - name: Lints (with the test clock)
+        run: cargo clippy --workspace --all-targets --features trcli-cli/test-clock -- -D warnings
 
       - name: Documentation of every item, public and private
         run: cargo doc --workspace --no-deps --document-private-items
 
-      # Unit tests, the contract suites against the fakes and against SQLite, the upgrade
-      # tests, and the structural gates that need no feature: layering, help examples,
-      # scenario coverage, the sample kinds staying external, atomic writes.
+      # Unit tests, the use cases against the doubles, the contract suites against the
+      # doubles and against SQLite, the upgrade tests, and the structural gates: layering,
+      # help examples, scenario coverage, the invalid-input gate, atomic writes.
       - name: Tests (default build)
         run: cargo test --workspace --no-fail-fast
 
-      # The acceptance scenarios against the built binary, the usage guides' examples,
-      # the invalid-input gate, both output forms agreeing, and text in any script.
-      - name: Behaviour scenarios and gates (with the sample kinds and the test clock)
-        run: cargo test --workspace --no-fail-fast --features trcli-cli/test-clock,trcli-cli/sample-kind
+      # The same, plus what needs a fixed clock and seeded identifiers: the acceptance
+      # scenarios against the built tool, the usage guides' examples, both output forms
+      # agreeing, and text in any script.
+      - name: Behaviour scenarios and gates (with the test clock)
+        run: cargo test --workspace --no-fail-fast --features trcli-cli/test-clock
 
-      # A release build must not carry the sample kinds.
-      - name: A default build has no sample commands
+      # The sample kinds live in an example; the binary must not carry them.
+      - name: The trcli binary has no sample commands
         shell: bash
         run: |
           cargo build -p trcli-cli
@@ -77,4 +78,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - name: A simple command under 100 ms; 10,000 records listed and searched under 2 s
-        run: cargo test --release -p trcli-cli --test performance --features test-clock,sample-kind -- --ignored
+        run: cargo test --release -p trcli-cli --test performance --example sample_kinds --features test-clock -- --ignored

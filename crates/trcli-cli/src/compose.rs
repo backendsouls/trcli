@@ -48,6 +48,7 @@ use trcli_infra_system::settings_files::{
 
 use crate::args::global::GlobalArgs;
 use crate::diagnostics::Diagnostics;
+use crate::extension::Extension;
 use crate::output::Presentation;
 use crate::progress::TerminalProgress;
 use crate::prompt::TerminalPrompter;
@@ -85,17 +86,17 @@ pub struct Registries {
 }
 
 impl Registries {
-    /// The registries of this build: the foundation's settings, and the record kinds of
-    /// the features compiled in. Adding a feature adds a line here and nowhere else in
-    /// the foundation.
-    pub fn of_this_build() -> Self {
+    /// The registries of this build: the foundation's settings, and the kinds of record
+    /// the extension owns. The foundation names no feature here or anywhere.
+    pub fn with(extension: &impl Extension) -> Self {
         let mut settings = SettingsRegistry::new();
         foundation::register(&mut settings);
-        #[allow(unused_mut)]
         let mut kinds = KindRegistry::new();
-        #[cfg(feature = "sample-kind")]
-        trcli_application::sample::register(&mut kinds)
-            .unwrap_or_else(|error| panic!("sample kinds: {error}"));
+        // Two kinds with the same name or prefix are a mistake in the build, shown at
+        // once, where a contributor sees it.
+        extension
+            .register_kinds(&mut kinds)
+            .unwrap_or_else(|error| panic!("record kinds: {error}"));
         Self { settings, kinds }
     }
 }
@@ -184,9 +185,10 @@ impl Session {
     pub fn start(
         global: GlobalArgs,
         zone: UtcOffset,
+        extension: &impl Extension,
     ) -> Result<Self, Box<(Problem, Presentation)>> {
         let fallback = Presentation::before_settings(&global, zone);
-        let registries = Registries::of_this_build();
+        let registries = Registries::with(extension);
         let keys: Vec<SettingKey> = registries
             .settings
             .all()

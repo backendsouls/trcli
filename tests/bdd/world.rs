@@ -100,11 +100,12 @@ impl TrcliWorld {
         }
     }
 
-    /// The `trcli` command, set up so that nothing outside the scenario's directory is
+    /// The tool — with the sample kinds added, so that scenarios have records to work
+    /// with — set up so that nothing outside the scenario's directory is
     /// read or written and so that time and identifiers are fixed.
     pub fn trcli(&mut self, arguments: &[String]) -> Command {
         self.runs += 1;
-        let mut command = Command::new(env!("CARGO_BIN_EXE_trcli"));
+        let mut command = Command::new(sample_program());
         let settings = self.home().join("user-settings");
         command
             .args(arguments)
@@ -297,6 +298,25 @@ impl TrcliWorld {
         }
         expanded
     }
+}
+
+/// The example program that is `trcli` with the sample kinds of record added. Cargo
+/// builds it beside the binary when the whole test suite is run; a single suite is run
+/// with `--example sample_kinds` added to build it too.
+pub fn sample_program() -> PathBuf {
+    let binary = Path::new(env!("CARGO_BIN_EXE_trcli"));
+    let name = format!("sample_kinds{}", std::env::consts::EXE_SUFFIX);
+    let program = binary
+        .parent()
+        .expect("the binary is in a directory")
+        .join("examples")
+        .join(name);
+    assert!(
+        program.is_file(),
+        "{} is not built: run the suite with `--example sample_kinds`, or run every test",
+        program.display()
+    );
+    program
 }
 
 /// A directory in the form the tool prints it: with links resolved (on some systems the

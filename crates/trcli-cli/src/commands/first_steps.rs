@@ -1,12 +1,12 @@
 //! `trcli` with no arguments: the short help, and — in a workspace with nothing in it
 //! yet — the first things to do (FR-055, FR-061).
 
+use clap::Command;
 use trcli_application::outcome::Problem;
 use trcli_application::ports::records::RecordIndex;
 use trcli_application::ports::unit_of_work::Storage;
 use trcli_application::workspace::open::Access;
 
-use crate::cli::command;
 use crate::compose::Session;
 use crate::output::Reply;
 use crate::render::views::Text;
@@ -32,8 +32,8 @@ async fn workspace_is_empty(session: &mut Session) -> Result<bool, Problem> {
 }
 
 /// Shows the short help, never failing: asking what the tool can do must always work.
-pub async fn run(session: &mut Session) -> Result<Reply, Problem> {
-    let mut text = command().render_help().to_string();
+pub async fn run(session: &mut Session, command: &Command) -> Result<Reply, Problem> {
+    let mut text = command.clone().render_help().to_string();
     let hint = if session.located().is_err() {
         Some(NO_WORKSPACE)
     } else {

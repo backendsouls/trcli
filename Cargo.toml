@@ -8,6 +8,7 @@ members = [
     "crates/trcli-infra-sqlite",
     "crates/trcli-infra-system",
     "crates/trcli-cli",
+    "crates/trcli-testing",
 ]
 
 [workspace.package]
@@ -24,6 +25,7 @@ trcli-domain = { path = "crates/trcli-domain" }
 trcli-application = { path = "crates/trcli-application" }
 trcli-infra-sqlite = { path = "crates/trcli-infra-sqlite" }
 trcli-infra-system = { path = "crates/trcli-infra-system" }
+trcli-testing = { path = "crates/trcli-testing" }
 
 clap = { version = "4.6", features = ["derive", "string", "wrap_help"] }
 clap_complete = "4.6"

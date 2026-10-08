@@ -8,7 +8,16 @@
 //!
 //! Flags that take no value cannot be given an invalid one and are not looked for.
 
+// Ports are used on one thread; see the same note in the application crate.
+#![allow(async_fn_in_trait)]
+
 mod common;
+
+/// The sample feature, compiled into this test from the example it lives in, so that its
+/// commands can be walked like the foundation's.
+#[allow(dead_code)]
+#[path = "../crates/trcli-cli/examples/sample_kinds/sample/mod.rs"]
+mod sample;
 
 use clap::{ArgAction, Command};
 
@@ -90,7 +99,7 @@ fn every_command_and_every_valued_option_has_a_rejection_scenario() {
         "the feature files hold the rejection scenarios this test reads"
     );
     let mut missing = Vec::new();
-    for (path, command) in runnable(&trcli_cli::cli::command(), &[]) {
+    for (path, command) in runnable(&trcli_cli::cli::command(&sample::SampleKinds), &[]) {
         let of_command: Vec<&Vec<String>> = lines.iter().filter(|line| runs(line, &path)).collect();
         let takes_input = command
             .get_arguments()
@@ -120,7 +129,7 @@ fn every_command_and_every_valued_option_has_a_rejection_scenario() {
 
 #[test]
 fn the_walk_sees_the_commands_it_is_meant_to_check() {
-    let commands: Vec<String> = runnable(&trcli_cli::cli::command(), &[])
+    let commands: Vec<String> = runnable(&trcli_cli::cli::command(&sample::SampleKinds), &[])
         .into_iter()
         .map(|(path, _)| path.join(" "))
         .collect();

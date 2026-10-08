@@ -55,7 +55,7 @@ fn assert_forms_agree(sandbox: &Sandbox, arguments: &[&str]) {
 
 /// A workspace with two specimens, one tagged, noted, and linked to the other.
 fn workspace() -> (Sandbox, String, String) {
-    let sandbox = Sandbox::with_workspace();
+    let sandbox = Sandbox::with_samples().init();
     let handle = |title: &str| {
         sandbox
             .ok(&["specimen", "add", "--title", title, "--output", "json"])

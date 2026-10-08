@@ -5,5 +5,5 @@ mod support;
 #[tokio::test(flavor = "current_thread")]
 async fn sqlite_passes_the_unit_of_work_contract() {
     let databases = support::Databases::new();
-    trcli_application::testing::contract_uow::run(async || databases.fresh().await).await;
+    trcli_testing::contract_uow::run(async || databases.fresh().await).await;
 }

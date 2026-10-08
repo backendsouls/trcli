@@ -4,7 +4,22 @@
 //! The command tree is walked as clap sees it, so a command added without help, without
 //! an example, or without a guide fails this test instead of reaching a researcher.
 
+// Ports are used on one thread; see the same note in the application crate.
+#![allow(async_fn_in_trait)]
+
 mod common;
+
+/// The sample feature, compiled into this test from the example it lives in, so that its
+/// commands can be walked like the foundation's.
+#[allow(dead_code)]
+#[path = "../crates/trcli-cli/examples/sample_kinds/sample/mod.rs"]
+mod sample;
+
+/// The whole command tree: the foundation's commands and the sample feature's, which
+/// must meet the same standard as any feature's.
+fn command_tree() -> Command {
+    trcli_cli::cli::command(&sample::SampleKinds)
+}
 
 use clap::Command;
 
@@ -32,7 +47,7 @@ fn long_help(command: &Command) -> String {
 
 #[test]
 fn every_command_says_what_it_is_for() {
-    for (path, command) in all_commands(&trcli_cli::cli::command(), &[]) {
+    for (path, command) in all_commands(&command_tree(), &[]) {
         let about = command
             .get_about()
             .map(ToString::to_string)
@@ -47,7 +62,7 @@ fn every_command_says_what_it_is_for() {
 
 #[test]
 fn every_command_shows_an_example_that_names_it() {
-    for (path, command) in all_commands(&trcli_cli::cli::command(), &[])
+    for (path, command) in all_commands(&command_tree(), &[])
         .into_iter()
         .filter(|(path, _)| !path.is_empty())
     {
@@ -66,7 +81,7 @@ fn every_command_shows_an_example_that_names_it() {
 
 #[test]
 fn every_option_and_argument_is_explained() {
-    for (path, command) in all_commands(&trcli_cli::cli::command(), &[]) {
+    for (path, command) in all_commands(&command_tree(), &[]) {
         for argument in command
             .get_arguments()
             .filter(|argument| !argument.is_hide_set())
@@ -87,7 +102,7 @@ fn every_option_and_argument_is_explained() {
 
 #[test]
 fn every_group_of_commands_names_a_usage_guide_that_exists_and_mentions_it() {
-    let root = trcli_cli::cli::command();
+    let root = command_tree();
     for group in root
         .get_subcommands()
         .filter(|group| group.get_name() != "help")

@@ -6,7 +6,6 @@
 //! - [`migrations`] are the versioned changes of format.
 //! - [`digest`] is the SHA-256 that chains the audit trail.
 //! - `entities` and `stores` are private: nothing outside this crate sees a table.
-//! - `sample` (feature `sample-kind`) holds the tables of the sample record kinds.
 //!
 //! This is the only crate that knows SQL or SeaORM. It deliberately knows nothing about
 //! the command line, rendering, or the operating system's conventions.
@@ -24,6 +23,3 @@ pub mod unit_of_work;
 pub(crate) mod convert;
 pub(crate) mod entities;
 mod stores;
-
-#[cfg(feature = "sample-kind")]
-pub mod sample;

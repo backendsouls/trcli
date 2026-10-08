@@ -7,10 +7,6 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[features]
-# Tables and stores of the sample record kinds. Never enabled in a release.
-sample-kind = ["trcli-application/sample-kind"]
-
 [dependencies]
 trcli-domain.workspace = true
 trcli-application.workspace = true
@@ -21,8 +17,7 @@ serde_json.workspace = true
 time.workspace = true
 
 [dev-dependencies]
-trcli-application = { workspace = true, features = ["test-support", "sample-kind"] }
-trcli-infra-sqlite = { path = ".", features = ["sample-kind"] }
+trcli-testing.workspace = true
 tokio.workspace = true
 tempfile.workspace = true
 

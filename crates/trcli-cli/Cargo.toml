@@ -15,18 +15,26 @@ path = "src/lib.rs"
 name = "trcli"
 path = "src/main.rs"
 
+# "trcli with a sample feature": two sample kinds of record added from outside the crates,
+# to prove and to show how a feature plugs in. The acceptance scenarios about records run
+# against this example; the trcli binary itself never contains it.
+[[example]]
+name = "sample_kinds"
+path = "examples/sample_kinds/main.rs"
+test = true
+
 # The black-box tests of the binary live at the repository root, beside the feature files
 # they run. They belong to this package because it builds the binary they test.
 [[test]]
 name = "bdd"
 path = "../../tests/bdd/main.rs"
 harness = false
-required-features = ["test-clock", "sample-kind"]
+required-features = ["test-clock"]
 
 [[test]]
 name = "usage"
 path = "../../tests/usage.rs"
-required-features = ["test-clock", "sample-kind"]
+required-features = ["test-clock"]
 
 [[test]]
 name = "help_examples"
@@ -43,7 +51,6 @@ path = "../../tests/scenario_coverage.rs"
 [[test]]
 name = "invalid_input_gate"
 path = "../../tests/invalid_input_gate.rs"
-required-features = ["sample-kind"]
 
 [[test]]
 name = "sample_kind_is_external"
@@ -52,12 +59,12 @@ path = "../../tests/sample_kind_is_external.rs"
 [[test]]
 name = "forms_agree"
 path = "../../tests/forms_agree.rs"
-required-features = ["test-clock", "sample-kind"]
+required-features = ["test-clock"]
 
 [[test]]
 name = "any_script"
 path = "../../tests/any_script.rs"
-required-features = ["test-clock", "sample-kind"]
+required-features = ["test-clock"]
 
 [[test]]
 name = "offline"
@@ -74,13 +81,11 @@ path = "../../tests/read_only_workspace.rs"
 [[test]]
 name = "performance"
 path = "../../tests/performance.rs"
-required-features = ["test-clock", "sample-kind"]
+required-features = ["test-clock"]
 
 [features]
 # Fixed clock and seeded identifiers taken from the environment. For BDD runs only.
 test-clock = ["trcli-infra-system/test-clock"]
-# The specimen and sample-note commands. For BDD runs only; never in a release.
-sample-kind = ["trcli-application/sample-kind", "trcli-infra-sqlite/sample-kind"]
 
 [dependencies]
 trcli-domain.workspace = true
@@ -98,7 +103,7 @@ terminal_size.workspace = true
 anstyle.workspace = true
 
 [dev-dependencies]
-trcli-application = { workspace = true, features = ["test-support"] }
+trcli-testing.workspace = true
 cucumber.workspace = true
 assert_cmd.workspace = true
 tempfile.workspace = true

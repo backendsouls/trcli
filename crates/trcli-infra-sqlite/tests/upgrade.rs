@@ -18,9 +18,6 @@ use trcli_application::ports::audit::AuditQuery;
 use trcli_application::ports::records::RecordIndex;
 use trcli_application::ports::unit_of_work::{Storage, UnitOfWork};
 use trcli_application::ports::workspace::{StorageOpener, WorkspaceStore};
-use trcli_application::testing::audit::MemoryHead;
-use trcli_application::testing::environment::{SeededIds, stamp};
-use trcli_application::testing::interaction::RecordingProgress;
 use trcli_application::workspace::open::{Access, guard};
 use trcli_application::workspace::upgrade::upgrade;
 use trcli_domain::governance::audit::AuditHead;
@@ -28,6 +25,9 @@ use trcli_domain::shared::text::{LongText, Name};
 use trcli_domain::workspace::{FormatVersion, Workspace};
 use trcli_infra_sqlite::connection::{SqliteOpener, SqliteStorage};
 use trcli_infra_sqlite::digest::Sha256Digest;
+use trcli_testing::audit::MemoryHead;
+use trcli_testing::environment::{SeededIds, stamp};
+use trcli_testing::interaction::RecordingProgress;
 
 /// A change of format that creates a table and then fails.
 struct FailsHalfWay;

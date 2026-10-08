@@ -6,17 +6,26 @@ and receives everything records have in common: a short name, `list`, `show`, `r
 `workspace show`, and entries in the audit trail. The contract is
 [`specs/000-foundation/contracts/feature-contract.md`](../../specs/000-foundation/contracts/feature-contract.md).
 
-The reference is the sample kind `specimen`, which exists to prove that contract. Its
-whole implementation is five small files; yours has the same five, in a module named after
-your feature in each layer.
+The reference is the sample kind `specimen`. It lives in an example,
+`crates/trcli-cli/examples/sample_kinds/`, which is the whole tool with two sample kinds
+added from outside the crates — the proof that the contract is enough, since no file of
+the foundation names them. Try it:
 
-| Layer | `specimen`'s file | What it holds |
-|-------|-------------------|---------------|
-| application | `crates/trcli-application/src/sample/specimen.rs` | descriptor, port for its own rows, behaviour, `add` and `edit` use cases, fake of its port |
-| storage | `crates/trcli-infra-sqlite/src/sample/specimen.rs` | its table as an entity, and its port implemented on the unit of work |
-| storage | `crates/trcli-infra-sqlite/src/sample/mod.rs` | its migration |
-| command line | `crates/trcli-cli/src/sample/specimen.rs` | its noun, its own `add` and `edit`, and one call for the shared verbs |
-| composition | `crates/trcli-cli/src/compose.rs`, `cli.rs`, `commands/mod.rs` | one line each: register the kind, add its noun, dispatch to it |
+```sh
+cargo run -p trcli-cli --example sample_kinds -- specimen add --title "Soil sample 14"
+```
+
+The example is laid out as a feature is, one part per layer:
+
+| Part of the example (`sample/…`) | What it holds | Where yours goes |
+|----------------------------------|---------------|------------------|
+| `application/specimen.rs` | descriptor, port for its own rows, behaviour, `add` and `edit` use cases | `crates/trcli-application/src/<feature>/` |
+| `storage/mod.rs`, `storage/specimen.rs` | its table, and its port implemented on the unit of work | `crates/trcli-infra-sqlite/src/<feature>/`, with a migration |
+| `commands/specimen.rs` | its noun, its own `add` and `edit`, and one call for the shared verbs | `crates/trcli-cli/src/args/` and `commands/` |
+| `mod.rs` | the `Extension` that registers the kinds and adds the commands | the same trait, implemented for your feature and composed in `main.rs` |
+
+A feature that ships with TRCLI is built **into** the crates, as a module of the same name
+in each layer; the example stays outside only because no release may contain it.
 
 Work in the order of [`CONTRIBUTING.md`](../../CONTRIBUTING.md): scenarios first.
 
@@ -49,10 +58,10 @@ pub trait SpecimenStore {
 }
 ```
 
-Implement it twice: for the in-memory `FakeUnit` (behind `test-support`, beside the port),
-and for `SqliteUnit` in the storage crate. If the port has rules of its own, write a
-contract suite both must pass, as the foundation's ports have in
-`crates/trcli-application/src/testing/contract_*.rs`.
+Implement it twice: for the in-memory `FakeUnit` of the `trcli-testing` crate, for your
+tests, and for the SQLite unit of work in the storage crate. If the port has rules of its
+own, write a contract suite both must pass, as the foundation's ports have in
+`crates/trcli-testing/src/contract_*.rs`.
 
 ## 3. The behaviour only the kind knows
 
@@ -115,11 +124,12 @@ CREATE TABLE specimen (
 );
 ```
 
-A real feature adds its migration to `Migrator::migrations()` in
+A feature adds its migration to `Migrator::migrations()` in
 `crates/trcli-infra-sqlite/src/migrations/mod.rs`, after the existing ones, and its tables
-to `EXPECTED_TABLES`. (The sample kinds use a migration set of their own, outside the
-workspace format, because no release has them.) Identifiers are stored as hyphenated text
-and moments as whole milliseconds; see `convert.rs`.
+to `EXPECTED_TABLES`. (The example cannot: it lives outside the crate, so it creates its
+tables itself where they are missing, and they are not part of the workspace format.)
+Identifiers are stored as hyphenated text and moments as whole milliseconds; see
+`convert.rs`.
 
 ## 6. The commands
 
@@ -142,12 +152,19 @@ if let Some(shared) = shared_verbs::run(session, &Specimens::new(), verb, matche
 
 ## 7. Registration
 
-In `compose.rs`, `Registries::of_this_build`:
+A feature tells the tool about itself through the `Extension` trait
+(`crates/trcli-cli/src/extension.rs`): the kinds it owns, the nouns it adds, and how its
+commands are run.
 
 ```rust
-kinds.register(my_feature::descriptor()).unwrap_or_else(|error| panic!("my feature: {error}"));
+impl Extension for SampleKinds {
+    fn register_kinds(&self, kinds: &mut KindRegistry) -> Result<(), KindError> { … }
+    fn commands(&self) -> Vec<Command> { … }
+    async fn run(&self, session: &mut Session, noun: &str, matches: &ArgMatches) -> Result<Reply, Problem> { … }
+}
 ```
 
+The example's `main.rs` is one line, `trcli_cli::run::main_with(&sample::SampleKinds)`.
 Two kinds with the same name or prefix stop the tool at start-up, where you see it at once.
 
 ## 8. What you did not write

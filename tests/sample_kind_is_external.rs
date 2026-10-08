@@ -1,9 +1,10 @@
-//! No foundation file names the sample record kinds (FR-068; proof for User Story 8).
+//! No file of the foundation names the sample record kinds (FR-068; proof for User
+//! Story 8).
 //!
-//! The sample kinds get everything records share by registering a descriptor. If making
-//! them work had needed a change to foundation code, that code would name them. This
-//! test reads every source file of every crate outside the `src/sample/` directories and
-//! fails if one does.
+//! The sample kinds live in an example, outside the crates' sources, and get everything
+//! records share by registering a descriptor. If making them work had needed a change to
+//! foundation code, that code would name them. This test reads every source file of
+//! every crate and fails if one does.
 
 mod common;
 
@@ -20,11 +21,8 @@ fn no_foundation_source_file_names_a_sample_kind() {
             .expect("under crates/")
             .to_string_lossy()
             .replace('\\', "/");
-        // The sample kinds' own code, and the adapter's test of that code.
-        let is_sample_code =
-            relative.contains("/src/sample/") || relative.ends_with("/tests/sample_kinds.rs");
-        let is_source = relative.contains("/src/");
-        if is_sample_code || !is_source {
+        // Only the crates' own sources: their tests and examples are not the foundation.
+        if !relative.contains("/src/") {
             continue;
         }
         let text = std::fs::read_to_string(&file)
@@ -44,27 +42,19 @@ fn no_foundation_source_file_names_a_sample_kind() {
 }
 
 #[test]
-fn the_sample_kinds_live_where_this_test_expects() {
-    let crates = common::repository().join("crates");
-    for directory in [
-        "trcli-application/src/sample",
-        "trcli-infra-sqlite/src/sample",
-        "trcli-cli/src/sample",
-    ] {
+fn the_sample_kinds_live_in_the_example() {
+    let example = common::repository().join("crates/trcli-cli/examples/sample_kinds/sample");
+    for part in ["application", "storage", "commands"] {
         assert!(
-            crates.join(directory).is_dir(),
-            "{directory} is where the sample kinds are kept"
+            example.join(part).is_dir(),
+            "the sample feature has a `{part}` part"
         );
     }
 }
 
 #[test]
-fn a_build_without_the_feature_has_no_sample_command() {
-    // This test target is built without the `sample-kind` feature unless it is asked for.
-    if cfg!(feature = "sample-kind") {
-        return;
-    }
-    let root = trcli_cli::cli::command();
+fn the_trcli_binary_has_no_sample_command() {
+    let root = trcli_cli::cli::command(&trcli_cli::extension::NoExtension);
     let nouns: Vec<&str> = root
         .get_subcommands()
         .map(clap::Command::get_name)
@@ -72,5 +62,10 @@ fn a_build_without_the_feature_has_no_sample_command() {
     assert!(
         !nouns.contains(&"specimen") && !nouns.contains(&"sample-note"),
         "{nouns:?}"
+    );
+    let help = common::Sandbox::new().ok(&["--help"]).stdout;
+    assert!(
+        !help.contains("specimen") && !help.contains("sample-note"),
+        "{help}"
     );
 }

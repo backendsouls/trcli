@@ -16,7 +16,7 @@ const TITLES: [&str; 5] = [
 
 /// A workspace holding one specimen per title.
 fn workspace() -> Sandbox {
-    let sandbox = Sandbox::with_workspace();
+    let sandbox = Sandbox::with_samples().init();
     for title in TITLES {
         sandbox.ok(&["specimen", "add", "--title", title, "--quiet"]);
     }
@@ -97,7 +97,7 @@ fn sorting_by_title_orders_every_script_without_error() {
 
 #[test]
 fn a_narrow_terminal_shortens_wide_characters_without_breaking_them() {
-    let sandbox = Sandbox::with_workspace();
+    let sandbox = Sandbox::with_samples().init();
     sandbox.ok(&[
         "specimen",
         "add",

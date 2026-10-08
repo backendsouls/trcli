@@ -98,6 +98,13 @@ confirmed in code in Phase 1 of the tasks.
 - **Development-only**: `cucumber` 0.23, `assert_cmd` 2.2, `tempfile` 3.27. Not compiled
   into `trcli`. `serde_json` is also used by the SQLite adapter (the `changes` of an audit
   entry are stored as JSON text); it was already a runtime dependency.
+- **Test doubles are hand-written fakes, not generated mocks.** `mockall` is the
+  well-known crate and was considered. It generates mocks that each test programs with
+  expectations; these tests need storage that behaves like storage — a change visible
+  after commit and gone after a drop — and assert what is true afterwards. Fakes give
+  that, are held to the same contract suites as the SQLite adapter, and let a use case be
+  rewritten without rewriting its tests. They live in their own crate, `trcli-testing`,
+  a development dependency only.
 - **Decided during implementation**:
   - `trycmd` is **not** used. The examples in `docs/usage/*.md` are run by ~120 lines of
     our own in `tests/usage.rs`, which lets one guide be one continuous session (a
@@ -207,13 +214,17 @@ confirmed in code in Phase 1 of the tasks.
   fields, counts in `workspace show`, and audit entries.
 - **What a feature still writes**: its aggregate and rules, its own fields for `add`,
   `edit`, `show`, and `list`, and its repository.
-- **Proof**: two *sample kinds* (`specimen` and `sample-note`) live in the application crate
-  under `src/sample/`, compiled only with the `sample-kind` cargo feature, which no release
-  build enables; the BDD suite builds with it, since it tests the compiled binary. Their
-  tables come from a separate migration set applied after the foundation's only under that
-  feature and not counted in the workspace format version. They are exercised by the
-  scenarios of user stories 2 and 8. If it
-  needs a change to foundation code to work, FR-068 is not met.
+- **Proof**: two *sample kinds* (`specimen` and `sample-note`) live in a Cargo example,
+  `crates/trcli-cli/examples/sample_kinds`, which is the tool with those kinds added from
+  outside the crates through one trait, `Extension` (register kinds, add commands, run
+  them). The `trcli` binary is built with no extension and cannot contain them; a test
+  fails if any source file of any crate names them. The BDD suite runs against the
+  example, since it needs records. The example creates its own two tables where they are
+  missing; they are not part of the workspace format. If the example needs a change to
+  foundation code to work, FR-068 is not met.
+  (First built as a `sample-kind` cargo feature inside the crates; moved to `examples/`,
+  which is where Rust keeps code that shows how a library is used, and which removes a
+  build feature from three crates.)
 - **Rationale**: Open/closed made concrete: adding a kind is adding a registration.
 - **Alternatives considered**: A derive macro generating commands per kind — less code per
   feature, but a proc-macro crate to maintain and behaviour hidden from the reader, against
@@ -342,8 +353,8 @@ confirmed in code in Phase 1 of the tasks.
 
   | Level | What | Where |
   |-------|------|-------|
-  | Unit | Value objects, rules, settings layering, validation, rendering, handlers with fakes | in each crate |
-  | Contract | Each port against its fake and its real adapter, same suite | `trcli-infra-*/tests` |
+  | Unit | Value objects, rules, validation, rendering: inline beside the code. Use cases with fakes: `trcli-application/tests/use_cases` | in each crate |
+  | Contract | Each port against its fake and its real adapter, same suite | suites in `trcli-testing`; run in `trcli-infra-*/tests` |
   | Behaviour | Every acceptance scenario of the spec as Gherkin, against the built binary in a temporary directory | `tests/features/**`, `tests/bdd` |
   | Documentation | Examples in `docs/usage/*.md`, run by our own runner | `tests/usage.rs` |
   | Structure | Layering; every command has help with an example; every command group has a guide | `tests/layering.rs`, `tests/help_examples.rs` |
