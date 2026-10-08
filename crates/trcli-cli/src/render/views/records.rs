@@ -123,6 +123,11 @@ impl Render for Linked {
     }
 }
 
+/// "1 link", "3 links".
+fn counted_links(total: u64) -> String {
+    if total == 1 { "1 link".to_owned() } else { format!("{total} links") }
+}
+
 impl Render for LinkList {
     fn render(&self, out: &mut Human) {
         if self.items.is_empty() {
@@ -130,7 +135,7 @@ impl Render for LinkList {
             return;
         }
         let handle = out.paint(Meaning::Handle, &self.of.handle);
-        out.line(format!("Links of {handle} \"{}\"", self.of.name));
+        out.line(format!("{} of {} {handle} \"{}\":", counted_links(self.total), self.of.kind, self.of.name));
         link_lines(out, &self.items);
     }
 }

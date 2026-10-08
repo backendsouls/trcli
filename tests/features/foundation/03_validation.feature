@@ -39,6 +39,10 @@ Feature: Have every input checked before anything changes
     When I run "trcli specimen slow --seconds soon"
     Then the exit code is 2
     And stderr contains "--seconds"
+    When I run "trcli specimen slow --seconds 1 --title ''"
+    Then the exit code is 2
+    And stderr contains "--title"
+    And nothing was changed
 
   @US3-04 @invalid
   Scenario: A value outside its set is answered with the valid choices
@@ -57,6 +61,13 @@ Feature: Have every input checked before anything changes
     When I run "trcli audit export --to audit.pdf --format pdf"
     Then the exit code is 2
     And stderr contains "markdown, json, csv"
+    When I run "trcli audit export --kind planet --actor ' ' --action explode --to audit.md"
+    Then the exit code is 2
+    And stderr contains "3 values are invalid"
+    And the file "audit.md" does not exist
+    When I run "trcli audit list --actor ' '"
+    Then the exit code is 2
+    And stderr contains "--actor"
     When I run "trcli workspace show --output xml"
     Then the exit code is 2
     And stderr contains "human, json"
@@ -136,6 +147,18 @@ Feature: Have every input checked before anything changes
     Then the exit code is 2
     When I run "trcli specimen list --search rain --tag 'no good'"
     Then the exit code is 2
+    When I run "trcli sample-note list --search rain --tag 'no good' --sort colour --limit 0"
+    Then the exit code is 2
+    And stderr contains "3 values are invalid"
+    When I run "trcli sample-note show 'not a name'"
+    Then the exit code is 2
+    When I run "trcli sample-note tag <note> 'Two Words'"
+    Then the exit code is 2
+    When I run "trcli sample-note note <note> ' '"
+    Then the exit code is 2
+    When I run "trcli sample-note rm 'not a name' --yes"
+    Then the exit code is 2
+    And nothing was changed
 
   @US3-07 @invalid
   Scenario: Two values that are each valid and together are not are reported with the rule

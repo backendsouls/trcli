@@ -24,13 +24,14 @@ pub fn distance(one: &str, other: &str) -> usize {
 }
 
 /// Up to `limit` of `candidates` closest to `typed`, nearest first, leaving out those too
-/// different to be what was meant (more than half of what was typed would have to change).
+/// different to be what was meant (more than a quarter of what was typed would have to
+/// change: two characters of an ordinary short name).
 pub fn closest<'a>(
     typed: &str,
     candidates: impl IntoIterator<Item = &'a str>,
     limit: usize,
 ) -> Vec<&'a str> {
-    let threshold = (typed.chars().count() / 2).max(2);
+    let threshold = (typed.chars().count() / 4).max(1);
     let mut scored: Vec<(usize, &str)> = candidates
         .into_iter()
         .map(|candidate| (distance(typed, candidate), candidate))

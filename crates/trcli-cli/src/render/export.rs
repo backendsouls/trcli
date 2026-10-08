@@ -94,9 +94,9 @@ mod tests {
             at: OffsetDateTime::UNIX_EPOCH.into(),
             actor: "ana".into(),
             action: "update".into(),
-            kind: Some("specimen".into()),
+            kind: Some("reference".into()),
             record_id: None,
-            handle: Some("spc-7k3f".into()),
+            handle: Some("ref-7k3f".into()),
             display_name: Some("Rain, \"heavy\" | cold".into()),
             changes: vec![ChangeView { field: "title".into(), before: Some("Rain".into()), after: None }],
             hash: "ab".repeat(32),
@@ -107,7 +107,7 @@ mod tests {
     fn markdown_is_a_table_with_one_row_per_entry() {
         let text = report(&[entry()], ExportFormat::Markdown, "Doctorate");
         assert!(text.starts_with("# Audit trail of \"Doctorate\"\n\n1 entries.\n"));
-        assert!(text.contains("| 3 | 1970-01-01T00:00:00Z | ana | update | spc-7k3f \"Rain, \"heavy\" \\| cold\" title: Rain -> (none) |"));
+        assert!(text.contains("| 3 | 1970-01-01T00:00:00Z | ana | update | ref-7k3f \"Rain, \"heavy\" \\| cold\" title: Rain -> (none) |"));
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod tests {
     fn csv_quotes_what_needs_quoting() {
         let text = report(&[entry()], ExportFormat::Csv, "Doctorate");
         let line = text.lines().nth(1).expect("a line");
-        assert!(line.starts_with("3,1970-01-01T00:00:00Z,ana,update,specimen,spc-7k3f,\"Rain, \"\"heavy\"\" | cold\",title: Rain -> ,"));
+        assert!(line.starts_with("3,1970-01-01T00:00:00Z,ana,update,reference,ref-7k3f,\"Rain, \"\"heavy\"\" | cold\",title: Rain -> ,"));
         assert_eq!(text.lines().next(), Some("sequence,at,actor,action,kind,handle,display_name,changes,hash"));
     }
 }

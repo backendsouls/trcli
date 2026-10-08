@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn a_kind_name_is_two_to_forty_lower_case_letters_or_hyphens() {
-        assert!(RecordKind::new("sample-note", "smp").is_ok());
+        assert!(RecordKind::new("lab-note", "lab").is_ok());
         assert!(RecordKind::new("x", "ab").is_err());
         assert!(RecordKind::new("Reference", "ref").is_err());
         assert!(RecordKind::new(&"k".repeat(41), "ref").is_err());

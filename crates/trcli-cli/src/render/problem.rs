@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn a_warning_is_one_line() {
-        let warning = Warning::new("duplicate_suspected", "another specimen has the same title");
-        assert_eq!(render_warning(&warning, &Theme::plain()), "warning: another specimen has the same title");
+        let warning = Warning::new("duplicate_suspected", "another reference has the same title");
+        assert_eq!(render_warning(&warning, &Theme::plain()), "warning: another reference has the same title");
     }
 }

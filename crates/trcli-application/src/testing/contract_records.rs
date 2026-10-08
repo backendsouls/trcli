@@ -55,7 +55,7 @@ fn query(kind: &str) -> ListQuery {
     }
 }
 
-/// Storage holding three records: two specimens ("Ação", "Banana") and one sample note.
+/// Storage holding three records: two of kind `alpha` ("Ação", "Banana split") and one of kind `beta`.
 async fn seeded<S>(storage: &S) -> [IndexedRecord; 3]
 where
     S: Storage,
